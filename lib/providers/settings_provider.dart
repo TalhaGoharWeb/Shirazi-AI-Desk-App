@@ -33,6 +33,19 @@ class SettingsProvider with ChangeNotifier {
 
   bool isProviderEnabled(String provider) => storageService.isProviderEnabled(provider);
 
+  /// §1: true when the Oracle endpoint uses HTTPS (production requirement).
+  bool get isSecureTransport => apiService.isSecureTransport;
+
+  /// Log-safe Oracle endpoint label (no credentials).
+  String get oracleServerLabel => apiService.redactedEndpoint;
+
+  /// Development-only override: allow user keys over plain HTTP. Default false.
+  bool get allowInsecureHttp => storageService.allowInsecureHttp;
+  void setAllowInsecureHttp(bool value) {
+    storageService.allowInsecureHttp = value;
+    notifyListeners();
+  }
+
   void toggleProviderEnabled(String provider, bool enabled) {
     storageService.setProviderEnabled(provider, enabled);
     notifyListeners();
@@ -66,25 +79,31 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void saveCurrentKey(String key) {
-    saveKeyForProvider(selectedProvider, key);
+  Future<bool> saveCurrentKey(String key) {
+    return saveKeyForProvider(selectedProvider, key);
   }
 
-  void saveKeyForProvider(String provider, String key) {
+  /// Saves [key] for [provider] into secure device storage.
+  /// Returns `true` only when the write actually landed in platform secure
+  /// storage — the UI must show the returned result, not an assumed success.
+  Future<bool> saveKeyForProvider(String provider, String key) async {
     final clean = sanitizeApiKey(key);
-    switch (provider.toLowerCase().trim()) {
+    final p = provider.toLowerCase().trim();
+    bool ok;
+    switch (p) {
       case 'gemini':
-        storageService.geminiKey = clean;
-        break;
       case 'groq':
-        storageService.groqKey = clean;
-        break;
       case 'openrouter':
-        storageService.openRouterKey = clean;
+        ok = await storageService.saveKey(p, clean);
         break;
+      default:
+        ok = false;
     }
-    _testStatus = clean.isEmpty ? 'Active & Ready' : 'Key Saved Successfully';
+    _testStatus = ok
+        ? (clean.isEmpty ? 'Active & Ready' : 'Key Saved Successfully')
+        : 'Save failed: ${storageService.lastKeyWriteError ?? 'secure storage unavailable'}';
     notifyListeners();
+    return ok;
   }
 
   void deleteKey(String provider) {

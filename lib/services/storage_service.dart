@@ -1,7 +1,21 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/inquiry.dart';
 
+/// BYOK key security model (§7).
+///
+/// - At rest: keys live in PLATFORM SECURE STORAGE (Android Keystore /
+///   iOS Keychain via flutter_secure_storage), never in SharedPreferences.
+/// - In memory: cached after [loadSecureKeys] so the existing synchronous
+///   API keeps working.
+/// - In transit: keys are sent ONLY to the Shirazi Oracle over HTTPS
+///   (enforced by ApiService). They are never logged, never written to
+///   Firestore, and never included in analytics/crash reports.
+/// - Legacy values (plaintext or the old XOR `enc_` obfuscation — which was
+///   never real encryption) are migrated once into secure storage and then
+///   deleted from SharedPreferences.
 class StorageService {
   static const String _keyGemini = 'byok_gemini';
   static const String _keyGroq = 'byok_groq';
@@ -30,6 +44,7 @@ class StorageService {
   static const String _keyScholarEmail = 'auth_scholar_email';
   static const String _keyScholarRole = 'auth_scholar_role';
   static const String _keyGuestUid = 'auth_guest_uid';
+  static const String _keyAllowInsecureHttp = 'pref_allow_insecure_http';
 
   final SharedPreferences _prefs;
 
@@ -46,17 +61,135 @@ class StorageService {
 
   static Future<StorageService> init() async {
     final prefs = await SharedPreferences.getInstance();
-    return StorageService(prefs);
+    final service = StorageService(prefs);
+    await service.loadSecureKeys();
+    return service;
   }
 
-  // --- Device-Bound Key Persistence ---
-  String _encryptKey(String plain) {
-    final clean = plain.trim();
-    if (clean.isEmpty) return '';
-    return clean;
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  /// In-memory cache of BYOK keys, populated by [loadSecureKeys].
+  final Map<String, String> _keyCache = {};
+  bool _secureKeysLoaded = false;
+
+  static const List<String> _keyProviders = [
+    'gemini',
+    'groq',
+    'openai',
+    'anthropic',
+    'deepseek',
+    'openrouter',
+  ];
+
+  String _legacyPrefsKey(String provider) {
+    switch (provider) {
+      case 'gemini':
+        return _keyGemini;
+      case 'groq':
+        return _keyGroq;
+      case 'openai':
+        return _keyOpenAI;
+      case 'anthropic':
+        return _keyAnthropic;
+      case 'deepseek':
+        return _keyDeepSeek;
+      case 'openrouter':
+        return _keyOpenRouter;
+      default:
+        return 'byok_$provider';
+    }
   }
 
-  String _decryptKey(String cipher) {
+  static String _secureKeyName(String provider) => 'byok_key_$provider';
+
+  /// Loads BYOK keys from platform secure storage into the memory cache.
+  /// Migrates any legacy SharedPreferences values (plaintext or old XOR
+  /// `enc_` obfuscation) into secure storage exactly once, then deletes them.
+  /// Call once at startup before any key is read.
+  Future<void> loadSecureKeys() async {
+    for (final p in _keyProviders) {
+      String value = '';
+      try {
+        value = (await _secureStorage.read(key: _secureKeyName(p))) ?? '';
+      } catch (e) {
+        debugPrint('[StorageService] Secure storage read failed for $p: $e');
+      }
+      if (value.isEmpty) {
+        final legacyKey = _legacyPrefsKey(p);
+        final legacyCipher = _prefs.getString(legacyKey) ?? '';
+        if (legacyCipher.isNotEmpty) {
+          final migrated = _decryptLegacyKey(legacyCipher);
+          if (migrated.isNotEmpty) {
+            // Delete the legacy pref ONLY after a confirmed secure write.
+            // Otherwise a failed migration would destroy the only copy.
+            var writeOk = false;
+            try {
+              await _secureStorage.write(key: _secureKeyName(p), value: migrated);
+              writeOk = true;
+            } catch (e) {
+              debugPrint('[StorageService] Secure storage write failed for $p: $e');
+            }
+            if (writeOk) {
+              value = migrated;
+              await _prefs.remove(legacyKey);
+              debugPrint('[StorageService] Migrated legacy BYOK key for $p into secure storage.');
+            } else {
+              // Keep the legacy value alive as a last resort so the user's
+              // key is not destroyed; it will be retried on next startup.
+              debugPrint('[StorageService] Migration deferred for $p: secure write failed, legacy value kept.');
+            }
+          } else {
+            await _prefs.remove(legacyKey);
+          }
+        }
+      }
+      _keyCache[p] = value;
+    }
+    _secureKeysLoaded = true;
+  }
+
+  /// Writes a BYOK key through to platform secure storage and the cache.
+  /// An empty value deletes the key.
+  ///
+  /// The in-memory cache is updated ONLY after the secure write succeeds, so
+  /// the app never claims a key is saved when it actually was not. On
+  /// failure the previous cache value is kept and the error is recorded in
+  /// [lastKeyWriteError]; prefer [saveKey] when the caller needs the result.
+  Future<void> _writeSecureKey(String provider, String value) async {
+    await saveKey(provider, value);
+  }
+
+  /// Last secure-storage write failure, human-readable; `null` when the most
+  /// recent write succeeded (or no write has happened yet).
+  String? lastKeyWriteError;
+
+  /// Saves [value] for [provider] in secure storage. Returns `true` only when
+  /// the write actually landed in platform secure storage. Updates the
+  /// memory cache on success and records [lastKeyWriteError] on failure.
+  Future<bool> saveKey(String provider, String value) async {
+    final p = provider.toLowerCase().trim();
+    final clean = value.trim();
+    try {
+      if (clean.isEmpty) {
+        await _secureStorage.delete(key: _secureKeyName(p));
+      } else {
+        await _secureStorage.write(key: _secureKeyName(p), value: clean);
+      }
+    } catch (e) {
+      lastKeyWriteError = 'Secure device storage write failed for $p: $e';
+      debugPrint('[StorageService] $lastKeyWriteError');
+      return false;
+    }
+    lastKeyWriteError = null;
+    _keyCache[p] = clean;
+    return true;
+  }
+
+  /// Reads the old XOR `enc_` obfuscation (or plaintext) for one-time
+  /// migration. This was never real encryption and is not used for new writes.
+  String _decryptLegacyKey(String cipher) {
     if (cipher.isEmpty) return '';
     if (!cipher.startsWith('enc_')) return cipher.trim();
     try {
@@ -74,66 +207,44 @@ class StorageService {
     return cipher.trim();
   }
 
-  // BYOK Keys (Locally Encrypted)
-  String get geminiKey => _decryptKey(_prefs.getString(_keyGemini) ?? '');
-  set geminiKey(String value) => _prefs.setString(_keyGemini, _encryptKey(value));
+  // --- BYOK Keys (platform secure storage; synchronous cache API) ---
+  // NOTE: the synchronous getters below read the in-memory cache populated
+  // by loadSecureKeys(). Setters write through to secure storage.
 
-  String get groqKey => _decryptKey(_prefs.getString(_keyGroq) ?? '');
-  set groqKey(String value) => _prefs.setString(_keyGroq, _encryptKey(value));
+  String get geminiKey => getKeyForProvider('gemini');
+  set geminiKey(String value) => _writeSecureKey('gemini', value);
 
-  String get openAiKey => _decryptKey(_prefs.getString(_keyOpenAI) ?? '');
-  set openAiKey(String value) => _prefs.setString(_keyOpenAI, _encryptKey(value));
+  String get groqKey => getKeyForProvider('groq');
+  set groqKey(String value) => _writeSecureKey('groq', value);
 
-  String get anthropicKey => _decryptKey(_prefs.getString(_keyAnthropic) ?? '');
-  set anthropicKey(String value) => _prefs.setString(_keyAnthropic, _encryptKey(value));
+  String get openAiKey => getKeyForProvider('openai');
+  set openAiKey(String value) => _writeSecureKey('openai', value);
 
-  String get deepSeekKey => _decryptKey(_prefs.getString(_keyDeepSeek) ?? '');
-  set deepSeekKey(String value) => _prefs.setString(_keyDeepSeek, _encryptKey(value));
+  String get anthropicKey => getKeyForProvider('anthropic');
+  set anthropicKey(String value) => _writeSecureKey('anthropic', value);
 
-  String get openRouterKey => _decryptKey(_prefs.getString(_keyOpenRouter) ?? '');
-  set openRouterKey(String value) => _prefs.setString(_keyOpenRouter, _encryptKey(value));
+  String get deepSeekKey => getKeyForProvider('deepseek');
+  set deepSeekKey(String value) => _writeSecureKey('deepseek', value);
+
+  String get openRouterKey => getKeyForProvider('openrouter');
+  set openRouterKey(String value) => _writeSecureKey('openrouter', value);
 
   void deleteKey(String provider) {
-    switch (provider.toLowerCase().trim()) {
-      case 'gemini':
-        _prefs.remove(_keyGemini);
-        break;
-      case 'groq':
-        _prefs.remove(_keyGroq);
-        break;
-      case 'openai':
-        _prefs.remove(_keyOpenAI);
-        break;
-      case 'anthropic':
-        _prefs.remove(_keyAnthropic);
-        break;
-      case 'deepseek':
-        _prefs.remove(_keyDeepSeek);
-        break;
-      case 'openrouter':
-        _prefs.remove(_keyOpenRouter);
-        break;
-    }
+    _writeSecureKey(provider, '');
   }
 
   String getKeyForProvider(String provider) {
-    switch (provider.toLowerCase().trim()) {
-      case 'gemini':
-        return geminiKey;
-      case 'groq':
-        return groqKey;
-      case 'openai':
-        return openAiKey;
-      case 'anthropic':
-        return anthropicKey;
-      case 'deepseek':
-        return deepSeekKey;
-      case 'openrouter':
-        return openRouterKey;
-      default:
-        return '';
-    }
+    final p = provider.toLowerCase().trim();
+    if (_keyCache.containsKey(p)) return _keyCache[p]!;
+    // Not yet loaded: fall back to a legacy prefs read so early callers
+    // never crash (migrated properly on loadSecureKeys).
+    return _decryptLegacyKey(_prefs.getString(_legacyPrefsKey(p)) ?? '');
   }
+
+  /// Development-only override: allow transmitting user keys over plain HTTP.
+  /// Default false. Production must use HTTPS.
+  bool get allowInsecureHttp => _prefs.getBool(_keyAllowInsecureHttp) ?? false;
+  set allowInsecureHttp(bool value) => _prefs.setBool(_keyAllowInsecureHttp, value);
 
   // Preferred & Secondary Fallback Priority
   String get preferredProvider => _prefs.getString(_keyPreferredProvider) ?? selectedProvider;

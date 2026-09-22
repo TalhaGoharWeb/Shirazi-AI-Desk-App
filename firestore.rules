@@ -1,93 +1,162 @@
 rules_version = '2';
+
+// Shirazi AI Desk — Firestore Security Rules (production hardening).
+//
+// AUTHORIZATION MODEL (§2, §3, §12, §13):
+// - Privileged roles come ONLY from Firebase Authentication custom claims,
+//   assigned server-side via the Admin SDK (tools/set_super_admin_claim.mjs).
+// - NEVER trust users/{uid}.role or any other client-writable document for
+//   authorization. A previous version of these rules did, which allowed any
+//   user to grant themselves admin/super_admin.
+// - Users may write only whitelisted, non-privileged fields on their own
+//   profile document. `role`, `isAdmin`, `admin`, `superAdmin` and similar
+//   fields are rejected on every client write.
+// - Every conversation / message / inquiry document carries ownerUid and is
+//   readable/writable only by its owner (or a claims-verified admin).
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function: Check if user is authenticated
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function: Check if user is accessing their own resource
+
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Helper function: Check for Super Admin (muhaqqiqcreates@gmail.com)
+    // ── Server-controlled custom claims ONLY ──────────────────────────
+    // Set via Firebase Admin SDK; clients cannot mint or modify these.
+    function claimRole() {
+      return isAuthenticated() && request.auth.token.role != null
+        ? request.auth.token.role
+        : '';
+    }
+
     function isSuperAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == 'muhaqqiqcreates@gmail.com' ||
-        request.auth.token.role == 'super_admin' ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
+        claimRole() == 'super_admin' || request.auth.token.superAdmin == true
       );
     }
 
-    // Helper function: Role-based admin check
     function isAdmin() {
-      return isSuperAdmin() || (
-        isAuthenticated() && (
-          request.auth.token.role in ['admin', 'super_admin'] ||
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin'])
-        )
+      return isSuperAdmin() || (isAuthenticated() && (
+        claimRole() == 'admin' || request.auth.token.admin == true
+      ));
+    }
+
+    // ── Profile field whitelist ───────────────────────────────────────
+    // Fields a user may set on their OWN profile. Privilege-related fields
+    // are never writable by clients — not on create, not on update.
+    function allowedProfileFields() {
+      return [
+        'displayName', 'photoURL', 'language', 'madhhab', 'persona',
+        'theme', 'notifications', 'createdAt', 'updatedAt'
+      ];
+    }
+
+    function noPrivilegeFields() {
+      return !(
+        'role' in request.resource.data ||
+        'isAdmin' in request.resource.data ||
+        'admin' in request.resource.data ||
+        'superAdmin' in request.resource.data ||
+        'super_admin' in request.resource.data
       );
     }
 
-    // 1. User Profiles Collection
+    function validProfileWrite() {
+      return request.resource.data.keys().hasOnly(allowedProfileFields())
+        && noPrivilegeFields();
+    }
+
+    // 1. User Profiles — owner-writable for whitelisted fields only.
+    //    Admins (claims-verified) may read any profile; only the super admin
+    //    may update/delete profiles or touch privilege state (via claims,
+    //    never via document fields).
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow write: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && validProfileWrite();
+      allow update: if (isOwner(uid) && validProfileWrite()) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     // Legacy scholar profile mapping (backward compatibility)
     match /scholars/{uid} {
-      allow read, write: if isOwner(uid) || isAdmin();
-      
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && validProfileWrite();
+      allow update: if (isOwner(uid) && validProfileWrite()) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+
       match /{allSubcollections=**} {
-        allow read, write: if isOwner(uid) || isAdmin();
+        allow read: if isOwner(uid) || isAdmin();
+        allow create, update: if isOwner(uid) || isSuperAdmin();
+        allow delete: if isSuperAdmin();
       }
     }
 
-    // 2. Multi-User Conversations Collection
+    // 2. Conversations — strict per-user isolation (§12).
+    //    ownerUid is immutable after create and must equal the caller's uid.
     match /conversations/{conversationId} {
-      // Users can ONLY read their own conversations; Super Admin & Admin can inspect all
       allow read: if isAuthenticated() && (
         resource.data.ownerUid == request.auth.uid || isAdmin()
       );
-      
-      // Conversations must be created with ownerUid matching the authenticated user
-      allow create: if isAuthenticated() && (
-        request.resource.data.ownerUid == request.auth.uid
-      );
-      
-      // Updates and deletions restricted to owner or Super Admin / Admin
+
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerUid == request.auth.uid
+        && noPrivilegeFields();
+
       allow update: if isAuthenticated() && (
-        (resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid) || isAdmin()
+        (
+          resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == request.auth.uid
+          && noPrivilegeFields()
+        ) || isAdmin()
       );
-      
+
       allow delete: if isAuthenticated() && (
         resource.data.ownerUid == request.auth.uid || isAdmin()
       );
 
-      // Subcollection: Messages inside a conversation
       match /messages/{messageId} {
-        allow read: if isAuthenticated() && (
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerUid == request.auth.uid || isAdmin()
-        );
-        
-        allow create: if isAuthenticated() && (
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerUid == request.auth.uid
-        );
-        
-        allow update, delete: if isAuthenticated() && (
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerUid == request.auth.uid || isAdmin()
-        );
+        function parentOwned() {
+          return get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerUid == request.auth.uid;
+        }
+        allow read: if isAuthenticated() && (parentOwned() || isAdmin());
+        allow create: if isAuthenticated() && parentOwned()
+          && noPrivilegeFields();
+        allow update, delete: if isAuthenticated() && (parentOwned() || isAdmin());
       }
     }
 
-    // 3. Centralized Admin Collections (Telemetry, Moderation, Global Audit)
+    // 3. Research inquiries — same isolation as conversations.
+    match /inquiries/{inquiryId} {
+      allow read: if isAuthenticated() && (
+        resource.data.ownerUid == request.auth.uid || isAdmin()
+      );
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerUid == request.auth.uid
+        && noPrivilegeFields();
+      allow update: if isAuthenticated() && (
+        (
+          resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == request.auth.uid
+          && noPrivilegeFields()
+        ) || isAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.ownerUid == request.auth.uid || isAdmin()
+      );
+    }
+
+    // 4. Centralized admin collections — claims-verified admins only (§13).
+    //    Never reachable with a client-set role field.
     match /admin/{document=**} {
       allow read, write: if isAdmin();
+    }
+
+    // 5. Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

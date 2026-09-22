@@ -423,14 +423,56 @@ class ChatProvider with ChangeNotifier {
     _serverLatencyMs = latencyMs;
 
     final isExhausted = result['status'] == 'EXHAUSTED' || result['isExhausted'] == true;
+    final isQuotaExhausted = result['status'] == 'QUOTA_EXHAUSTED';
+    final oracleKeysUsed = result['oracle_keys_used'] == true;
     final isByok = result['isByokFallback'] == true;
     final byokProv = result['byokProvider'] as String? ?? '';
     final isRealtime = result['isRealtimeStream'] == true;
     final resultCitations = (result['citations'] as List? ?? []).map((c) => c.toString()).toList();
-    final answerText = result['answer'] as String? ?? 'المسألة محل بحث وتحقيق بين المذاهب...';
+    // Provenance: every normal answer must carry the Oracle source tag. If a
+    // SUCCESS result ever arrives without it, we treat it as untrusted.
+    final oracleSourced = result['source'] == 'shirazi-oracle';
+
+    // ── Provenance gate (§5): a SUCCESS result without the Oracle source tag
+    // is untrusted — it did not verifiably come through the Shirazi Oracle
+    // channel. We refuse to display it as a Shirazi answer.
+    //
+    // Honest-failure rule (§6): we NEVER invent a scholarly answer. If there
+    // is no answer text, we show the exhaustion message — never a fabricated
+    // placeholder Arabic sentence.
+    final isUntrustedSuccess =
+        result['status'] == 'SUCCESS' && !oracleSourced;
+    if (isUntrustedSuccess) {
+      debugPrint('[ChatProvider] Refusing SUCCESS result without shirazi-oracle provenance.');
+    }
+    final noAnswerText = (result['answer'] as String?)?.trim().isEmpty ?? true;
+    final effectiveExhausted = isExhausted || isQuotaExhausted || isUntrustedSuccess || noAnswerText;
+
+    final answerText = isQuotaExhausted
+        ? ApiService.getQuotaExhaustedMessage(queryLang, oracleKeysUsed)
+        : (noAnswerText
+            ? ApiService.getExhaustionMessage(queryLang)
+            : (result['answer'] as String? ?? ''));
 
     List<ReasoningStep> finalSteps;
-    if (isExhausted) {
+    if (isQuotaExhausted) {
+      finalSteps = [
+        const ReasoningStep(
+          title: 'Shirazi Oracle: inference capacity exhausted',
+          detail: 'Research pipeline ran; no inference quota available',
+          duration: '0.12s',
+          isCompleted: false,
+        ),
+        ReasoningStep(
+          title: 'Answer policy: no substitute generated',
+          detail: oracleKeysUsed
+              ? 'Personal key already routed via Shirazi pipeline — still at capacity'
+              : 'Add a personal API key in Settings to route via the Shirazi pipeline',
+          duration: '0.10s',
+          isCompleted: false,
+        ),
+      ];
+    } else if (isExhausted || isUntrustedSuccess) {
       finalSteps = [
         const ReasoningStep(
           title: 'Primary Shirazi Server & Core Gateway',
@@ -439,35 +481,42 @@ class ChatProvider with ChangeNotifier {
           isCompleted: false,
         ),
         ReasoningStep(
-          title: 'Personal Fallback Engine Cascade',
+          // No client-side "fallback engine" exists: a retry means the same
+          // question goes back to the Shirazi Oracle, optionally with the
+          // user's own key routed through the Oracle's pipeline.
+          title: 'Personal Key Retry (via Shirazi Oracle)',
           detail: providerPriority.isEmpty
-              ? 'No personal fallback API key configured'
-              : 'Configured keys reached limit or are unverified',
+              ? 'No personal API key configured for an Oracle-pipeline retry'
+              : 'Configured keys routed to the Shirazi Oracle pipeline reached limit or are unverified',
           duration: '0.15s',
           isCompleted: false,
         ),
       ];
     } else {
+      // Client-observed reasoning log: these steps describe ONLY what the
+      // client itself did and observed (dispatch, transport, receipt). They
+      // do NOT claim to know the Oracle server's internal pipeline actions
+      // (retrieval, verification, synthesis) — that would be fabrication.
       finalSteps = [
         ReasoningStep(
           title: 'Topic Identified: $topicLabel',
-          detail: 'Retrieved relevant texts for: $topicLabel',
+          detail: 'Client-side classification; full question dispatched to Shirazi Oracle',
           duration: '0.28s',
           isCompleted: true,
         ),
         ReasoningStep(
           title: 'Madhhab Filter: $effectiveMadhhab',
-          detail: 'Applied $effectiveMadhhab usul al-fiqh constraints',
+          detail: 'Preference sent with the request; applied by the Oracle server, not here',
           duration: '0.42s',
           isCompleted: true,
         ),
         ReasoningStep(
           title: 'Relevance Guard: Verified topic match',
           detail: isByok
-              ? 'Synthesized via Personal Fallback Engine ($byokProv)'
+              ? 'Personal key routed to Shirazi Oracle pipeline ($byokProv) — answer still came from the Oracle'
               : (isRealtime
-                  ? 'Authenticated live via Shirazi Agent Core & Gateway'
-                  : 'Final synthesis authenticated with classical references'),
+                  ? 'Response arrived over the live Oracle channel; citations shown only as provided by the server'
+                  : 'Response received from Shirazi Oracle; citations shown only as provided by the server'),
           duration: '0.35s',
           isCompleted: true,
         ),
@@ -490,19 +539,21 @@ class ChatProvider with ChangeNotifier {
       urduAnnotation: isExhausted
           ? null
           : (isByok
-              ? 'خلاصۂ فقہی: مفتاح ذاتی ($byokProv) کے ذریعے تخریج شدہ فتویٰ ($effectiveMadhhab مذہب)۔'
+              // BYOK keys only ever travel to the Oracle pipeline (§7); the
+              // answer still comes from the Shirazi Oracle Server.
+              ? 'خلاصۂ فقہی: آپ کی ذاتی کلید شیرازی اوریکل پائپ لائن کے ذریعے استعمال ہوئی ($effectiveMadhhab مذہب)۔'
               : (isRealtime
-                  ? 'خلاصۂ فقہی: براہِ راست شیرازی کور ایجنٹ سے حاصل کردہ مصدقہ جواب ($effectiveMadhhab مذہب)۔'
-                  : 'خلاصۂ فقہی: ائمہ فقہ کے اقوال کی روشنی میں تالیف شدہ ($effectiveMadhhab مذہب)۔')),
+                  ? 'خلاصۂ فقہی: شیرازی اوریکل سے براہِ راست حاصل کردہ جواب ($effectiveMadhhab مذہب)۔'
+                  : 'خلاصۂ فقہی: شیرازی اوریکل سے حاصل کردہ جواب ($effectiveMadhhab مذہب)۔')),
       timestamp: DateTime.now(),
       latencyMs: latencyMs,
       byokProvider: isExhausted
           ? null
           : (isByok ? byokProv : (isRealtime ? 'Shirazi Core Agent (Live)' : null)),
       isByokFallback: isByok,
-      isError: isExhausted,
-      canRetry: isExhausted || isSourceNotFound,
-      failedQuery: (isExhausted || isSourceNotFound) ? query : null,
+      isError: effectiveExhausted,
+      canRetry: effectiveExhausted || isSourceNotFound,
+      failedQuery: (effectiveExhausted || isSourceNotFound) ? query : null,
       messageType: msgType,
     );
 
