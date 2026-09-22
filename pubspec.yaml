@@ -1,0 +1,33 @@
+name: shirazi_app
+description: "Shirazi Jurisprudence & Islamic Scholarly AI Research Application"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.5+1
+  google_fonts: ^6.3.2
+  intl: ^0.19.0
+  http: ^1.2.2
+  path_provider: ^2.1.5
+  shared_preferences: ^2.3.0
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  cloud_firestore: ^6.10.0
+  socket_io_client: ^3.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

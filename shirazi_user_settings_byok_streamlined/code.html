@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_tab" name="shell-type"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Inter:wght@400;500;600;700&amp;family=Noto+Nastaliq+Urdu:wght@400;600;700&amp;family=Noto+Serif:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-tint": "#e9c349",
+            "secondary-fixed-dim": "#4edea3",
+            "surface-container": "#1c211e",
+            "on-surface": "#dfe4e0",
+            "on-surface-variant": "#d0c5af",
+            "secondary": "#4edea3",
+            "on-tertiary": "#3b2f00",
+            "surface-dim": "#0f1412",
+            "tertiary-container": "#cab25f",
+            "on-tertiary-fixed": "#231b00",
+            "surface-container-high": "#262b29",
+            "on-secondary": "#003824",
+            "on-background": "#dfe4e0",
+            "primary-fixed": "#ffe088",
+            "tertiary": "#e7cd78",
+            "surface-container-lowest": "#0a0f0d",
+            "outline-variant": "#4d4635",
+            "inverse-on-surface": "#2c322f",
+            "on-primary-container": "#554300",
+            "error": "#ffb4ab",
+            "on-secondary-container": "#00311f",
+            "surface-container-low": "#181d1a",
+            "surface": "#0f1412",
+            "on-error": "#690005",
+            "on-secondary-fixed": "#002113",
+            "background": "#0f1412",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#313633",
+            "on-tertiary-fixed-variant": "#554500",
+            "outline": "#99907c",
+            "tertiary-fixed-dim": "#dec571",
+            "on-primary-fixed-variant": "#574500",
+            "primary": "#f2ca50",
+            "surface-bright": "#353a38",
+            "on-primary-fixed": "#241a00",
+            "surface-variant": "#313633",
+            "secondary-container": "#00a572",
+            "primary-container": "#d4af37",
+            "on-tertiary-container": "#534400",
+            "secondary-fixed": "#6ffbbe",
+            "on-secondary-fixed-variant": "#005236",
+            "tertiary-fixed": "#fbe189",
+            "inverse-primary": "#735c00",
+            "primary-fixed-dim": "#e9c349",
+            "inverse-surface": "#dfe4e0",
+            "on-primary": "#3c2f00",
+            "error-container": "#93000a"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2.5rem",
+            "margin": "2.5rem",
+            "space-lg": "1.5rem",
+            "margin-mobile": "1rem",
+            "space-md": "1rem",
+            "gutter": "1.5rem",
+            "gutter-mobile": "0.75rem"
+          },
+          fontFamily: {
+            "body-md": ["Inter", "sans-serif"],
+            "label-md": ["Inter", "sans-serif"],
+            "display-hero": ["Noto Serif", "Amiri", "serif"],
+            "headline-md": ["Noto Serif", "Amiri", "serif"],
+            "headline-lg-mobile": ["Noto Serif", "Amiri", "serif"],
+            "headline-lg": ["Noto Serif", "Amiri", "serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "display-hero-mobile": ["Noto Serif", "Amiri", "serif"],
+            "body-scholarly-lg": ["Amiri", "Noto Serif", "serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "headline-sm": ["Noto Serif", "Amiri", "serif"],
+            "label-sm": ["Inter", "sans-serif"],
+            "amiri": ["Amiri", "serif"],
+            "urdu": ["Noto Nastaliq Urdu", "serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+      }
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    .provider-pill.active {
+      border-color: #f2ca50;
+      background-color: #262b29;
+    }
+  </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top App Header -->
+<header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-lowest/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.4)]">
+<div class="h-16 px-gutter-mobile flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-low flex items-center justify-center text-primary shadow-[0_0_12px_rgba(212,175,55,0.15)]">
+<span class="material-symbols-outlined text-[22px]">auto_awesome</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm tracking-wider uppercase text-secondary">Shirazi Jurisprudence</span>
+<h1 class="font-headline-sm text-headline-sm text-on-surface leading-none tracking-tight">Settings</h1>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<button aria-label="Global Scholarly Search" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]">search</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
+<div class="flex flex-col w-full px-margin-mobile pb-space-xl space-y-space-md">
+<!-- Welcoming Header Card -->
+<div class="rounded-xl bg-gradient-to-br from-surface-container-low via-surface-container-low to-surface-container-high/60 p-space-md shadow-sm border border-outline-variant/30 space-y-space-sm mt-space-sm">
+<div class="flex items-center justify-between">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/15 text-secondary text-label-sm font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Personal Key (BYOK)</span>
+</div>
+<span class="text-xs text-on-surface-variant font-amiri" dir="rtl">مفتاح الذكاء الاصطناعي الخاص</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Connect Your API Key</h2>
+<p class="text-body-sm text-on-surface-variant mt-1 leading-relaxed">
+            Provide your personal AI key for faster, private, and unlimited scholarly research and jurisprudential reasoning.
+          </p>
+</div>
+<div class="flex items-center gap-2 pt-1">
+<span class="material-symbols-outlined text-secondary text-[18px]">lock</span>
+<span class="text-xs text-on-surface-variant">Stored only on this device. Never uploaded to central servers.</span>
+</div>
+</div>
+<!-- Choose AI Service Provider -->
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-label-md text-label-md text-on-surface uppercase tracking-wider font-semibold">1. Choose AI Service</h3>
+<span class="text-xs text-on-surface-variant">اختر المزود</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<!-- Google Gemini (Selected) -->
+<button class="provider-btn flex flex-col items-start p-3 rounded-xl bg-surface-container-high border-2 border-primary text-left transition-all relative" id="btn-gemini" onclick="selectProvider('gemini')" type="button">
+<span class="absolute top-2 right-2 flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</span>
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+</div>
+<span class="font-label-md text-xs font-semibold text-on-surface">Gemini</span>
+<span class="text-[10px] text-secondary mt-0.5 font-medium">Free &amp; Fast</span>
+</button>
+<!-- OpenAI / OpenRouter -->
+<button class="provider-btn flex flex-col items-start p-3 rounded-xl bg-surface-container-low border border-outline-variant/40 hover:border-outline text-left transition-all" id="btn-openrouter" onclick="selectProvider('openrouter')" type="button">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant mb-2">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+</div>
+<span class="font-label-md text-xs font-semibold text-on-surface">OpenRouter</span>
+<span class="text-[10px] text-on-surface-variant mt-0.5">GPT-4 / Claude</span>
+</button>
+<!-- Groq -->
+<button class="provider-btn flex flex-col items-start p-3 rounded-xl bg-surface-container-low border border-outline-variant/40 hover:border-outline text-left transition-all" id="btn-groq" onclick="selectProvider('groq')" type="button">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant mb-2">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</div>
+<span class="font-label-md text-xs font-semibold text-on-surface">Groq Cloud</span>
+<span class="text-[10px] text-on-surface-variant mt-0.5">Ultra Speed</span>
+</button>
+</div>
+</div>
+<!-- Key Input Card -->
+<div class="rounded-xl bg-surface-container-low p-space-md space-y-space-sm border border-outline-variant/30 shadow-sm">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1.5" for="user-api-key">
+<span class="material-symbols-outlined text-primary text-[18px]">key</span>
+<span id="provider-input-label">Gemini API Key</span>
+</label>
+<span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary text-label-sm font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+            Active &amp; Ready
+          </span>
+</div>
+<div class="relative flex items-center bg-surface-container rounded-lg border border-outline-variant/50 focus-within:border-primary transition-colors">
+<input class="bg-transparent flex-1 px-3 py-2.5 text-on-surface font-body-sm focus:outline-none placeholder-outline text-sm tracking-wider" id="user-api-key" placeholder="Paste your API key here (e.g. AIzaSy...)" type="password" value="AIzaSyD9x8291mKLa40-84vQzLLo98xQ"/>
+<button aria-label="Toggle password visibility" class="px-3 text-on-surface-variant hover:text-primary transition-colors" onclick="toggleKeyVisibility()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="toggle-key-icon">visibility</span>
+</button>
+</div>
+<!-- Buttons row: Save + Test -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="h-11 rounded-lg bg-primary hover:bg-primary-fixed text-on-primary font-label-md text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors" id="save-key-btn" onclick="saveKey()" type="button">
+<span class="material-symbols-outlined text-[16px]">save</span>
+            Save My Key
+          </button>
+<button class="h-11 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors border border-outline-variant/40" id="test-key-btn" onclick="testKey()" type="button">
+<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+            Test Connection
+          </button>
+</div>
+<!-- Helper Guide Link -->
+<div class="pt-1 flex items-center justify-between text-xs">
+<a class="text-primary hover:underline inline-flex items-center gap-1 font-medium" href="#">
+<span>Need a free key? 1-minute setup guide</span>
+<span class="material-symbols-outlined text-[13px]">north_east</span>
+</a>
+<span class="text-on-surface-variant text-[11px]">100% Free Tier Available</span>
+</div>
+</div>
+<!-- App Preferences (Non-technical) -->
+<div class="rounded-xl bg-surface-container-low p-space-md space-y-4 border border-outline-variant/30 shadow-sm">
+<div class="flex items-center justify-between pb-1 border-b border-outline-variant/20">
+<h3 class="font-label-md text-label-md text-on-surface uppercase tracking-wider font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">tune</span>
+            App &amp; Reading Preferences
+          </h3>
+<span class="text-xs text-on-surface-variant font-amiri" dir="rtl">تفضيلات القراءة</span>
+</div>
+<!-- Display Language -->
+<div class="space-y-2">
+<label class="text-xs font-medium text-on-surface-variant flex items-center justify-between">
+<span>Display &amp; Inquiry Language</span>
+<span class="font-amiri text-xs" dir="rtl">لغة الواجهة والاستدلال</span>
+</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2 px-3 rounded-lg bg-surface-container text-xs font-medium text-on-surface border-2 border-primary flex items-center justify-center gap-1" type="button">
+<span class="font-amiri text-sm font-bold" dir="rtl">العربية</span>
+<span class="material-symbols-outlined text-[14px] text-primary">check</span>
+</button>
+<button class="py-2 px-3 rounded-lg bg-surface-container text-xs font-medium text-on-surface-variant border border-outline-variant/40 flex items-center justify-center gap-1" type="button">
+<span class="font-urdu text-xs">اردو</span>
+</button>
+<button class="py-2 px-3 rounded-lg bg-surface-container text-xs font-medium text-on-surface-variant border border-outline-variant/40 flex items-center justify-center" type="button">
+              English
+            </button>
+</div>
+</div>
+<!-- Font Size Slider -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-on-surface-variant">Arabic Font Size (حجم الخط)</span>
+<span class="text-xs font-semibold text-secondary" id="font-size-label">Medium (18px)</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs text-on-surface-variant">A</span>
+<input class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" id="font-slider" max="24" min="14" oninput="updateFontSize(this.value)" type="range" value="18"/>
+<span class="text-base text-on-surface font-amiri">ع</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container text-center border border-outline-variant/20">
+<p class="font-amiri text-[18px] text-on-surface transition-all" dir="rtl" id="font-preview">
+              بِسْمِ اللَّـهِ الرَّحْمَـٰنِ الرَّحِيمِ • كِتَابُ الحَجِّ وَالعُمْرَةِ
+            </p>
+</div>
+</div>
+<!-- Offline Reading Mode -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex flex-col pr-3">
+<span class="text-xs font-medium text-on-surface">Offline Reading Cache</span>
+<span class="text-[11px] text-on-surface-variant">Keep downloaded codices and answered fatwas on device</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary peer-checked:after:bg-on-secondary"></div>
+</label>
+</div>
+</div>
+<!-- About & Version Badge -->
+<div class="flex items-center justify-between py-1 px-1">
+<span class="text-[11px] text-outline">Shirazi Jurisprudence Reader v2.4</span>
+<span class="text-[11px] text-outline">All calculations verified</span>
+</div>
+<!-- Admin Console Entry (Protected / Discrete) -->
+<div class="pt-2 border-t border-outline-variant/20">
+<a class="rounded-xl bg-surface-container-lowest/80 border border-outline-variant/30 p-3.5 flex items-center justify-between hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-outline group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-on-surface flex items-center gap-1.5">
+                Admin Console
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container-highest text-outline font-normal">Restricted</span>
+</span>
+<span class="text-[11px] text-on-surface-variant">Manage Lucene index, OCI clusters &amp; backend nodes</span>
+</div>
+</div>
+<div class="flex items-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</div>
+</a>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl border-t border-outline-variant/20 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]" data-active-classes="text-primary">
+<div class="h-20 px-gutter-mobile flex justify-around items-center">
+<a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="research" href="#">
+<span class="material-symbols-outlined text-[24px]">auto_awesome</span>
+<span class="font-label-md text-label-md">Research</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="library" href="#">
+<span class="material-symbols-outlined text-[24px]">menu_book</span>
+<span class="font-label-md text-label-md">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="archive" href="#">
+<span class="material-symbols-outlined text-[24px]">bookmark</span>
+<span class="font-label-md text-label-md">Archive</span>
+</a>
+<a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] transition-colors text-primary" data-path="settings" href="#">
+<span class="material-symbols-outlined text-[24px]">tune</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Interactive Scripts -->
+<script>
+    function toggleKeyVisibility() {
+      const input = document.getElementById('user-api-key');
+      const icon = document.getElementById('toggle-key-icon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+      } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+      }
+    }
+
+    function selectProvider(provider) {
+      const buttons = document.querySelectorAll('.provider-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('border-primary', 'bg-surface-container-high');
+        btn.classList.add('border-outline-variant/40', 'bg-surface-container-low');
+      });
+
+      const label = document.getElementById('provider-input-label');
+      const input = document.getElementById('user-api-key');
+
+      if (provider === 'gemini') {
+        document.getElementById('btn-gemini').classList.add('border-primary', 'bg-surface-container-high');
+        document.getElementById('btn-gemini').classList.remove('border-outline-variant/40');
+        label.textContent = 'Gemini API Key';
+        input.placeholder = 'AIzaSy...';
+        input.value = 'AIzaSyD9x8291mKLa40-84vQzLLo98xQ';
+      } else if (provider === 'openrouter') {
+        document.getElementById('btn-openrouter').classList.add('border-primary', 'bg-surface-container-high');
+        document.getElementById('btn-openrouter').classList.remove('border-outline-variant/40');
+        label.textContent = 'OpenRouter / OpenAI API Key';
+        input.placeholder = 'sk-or-v1-... or sk-...';
+        input.value = '';
+      } else if (provider === 'groq') {
+        document.getElementById('btn-groq').classList.add('border-primary', 'bg-surface-container-high');
+        document.getElementById('btn-groq').classList.remove('border-outline-variant/40');
+        label.textContent = 'Groq Cloud API Key';
+        input.placeholder = 'gsk_...';
+        input.value = '';
+      }
+    }
+
+    function saveKey() {
+      const btn = document.getElementById('save-key-btn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Saved Locally!';
+      btn.classList.add('bg-secondary', 'text-on-secondary');
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.classList.remove('bg-secondary', 'text-on-secondary');
+      }, 2000);
+    }
+
+    function testKey() {
+      const btn = document.getElementById('test-key-btn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> Testing...';
+      setTimeout(() => {
+        btn.innerHTML = '<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span> Connected!';
+        setTimeout(() => {
+          btn.innerHTML = orig;
+        }, 2200);
+      }, 900);
+    }
+
+    function updateFontSize(val) {
+      const preview = document.getElementById('font-preview');
+      const label = document.getElementById('font-size-label');
+      preview.style.fontSize = val + 'px';
+      label.textContent = (val < 16 ? 'Small' : val > 20 ? 'Large' : 'Medium') + ' (' + val + 'px)';
+    }
+  </script>
+</body></html>

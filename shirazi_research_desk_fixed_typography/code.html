@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Noto+Nastaliq+Urdu:wght@400;700&amp;family=Scheherazade+New:wght@400;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=Noto+Serif:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-secondary-fixed-variant": "#005236", "on-tertiary-container": "#534400", "outline-variant": "#4d4635", "surface-container": "#1c211e", "on-tertiary": "#3b2f00", "on-tertiary-fixed": "#231b00", "outline": "#99907c", "secondary": "#4edea3", "primary-fixed-dim": "#e9c349", "tertiary": "#e7cd78", "surface-bright": "#353a38", "on-error": "#690005", "background": "#0f1412", "surface-container-lowest": "#0a0f0d", "surface-dim": "#0f1412", "inverse-primary": "#735c00", "primary-container": "#d4af37", "on-background": "#dfe4e0", "secondary-container": "#00a572", "secondary-fixed": "#6ffbbe", "error-container": "#93000a", "on-tertiary-fixed-variant": "#554500", "tertiary-fixed": "#fbe189", "error": "#ffb4ab", "on-surface": "#dfe4e0", "tertiary-container": "#cab25f", "on-secondary-container": "#00311f", "surface-container-high": "#262b29", "secondary-fixed-dim": "#4edea3", "surface-container-highest": "#313633", "primary": "#f2ca50", "primary-fixed": "#ffe088", "surface-variant": "#313633", "on-secondary-fixed": "#002113", "surface-tint": "#e9c349", "on-surface-variant": "#d0c5af", "on-primary": "#3c2f00", "inverse-on-surface": "#2c322f", "on-primary-fixed": "#241a00", "on-secondary": "#003824", "tertiary-fixed-dim": "#dec571", "surface": "#0f1412", "on-primary-fixed-variant": "#574500", "on-error-container": "#ffdad6", "on-primary-container": "#554300", "inverse-surface": "#dfe4e0", "surface-container-low": "#181d1a" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-md": "1rem", "space-lg": "1.5rem", "gutter": "1.5rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "margin-mobile": "1rem", "margin": "2.5rem", "gutter-mobile": "0.75rem", "space-sm": "0.5rem" }, fontFamily: { "headline-lg": ["Noto Serif"], "headline-sm": ["Noto Serif"], "headline-md": ["Noto Serif"], "display-hero-mobile": ["Noto Serif"], "headline-lg-mobile": ["Noto Serif"], "label-sm": ["Inter"], "label-md": ["Inter"], "body-lg": ["Inter"], "body-scholarly-lg": ["Noto Serif"], "display-hero": ["Noto Serif"], "body-md": ["Inter"], "body-sm": ["Inter"], "amiri": ["Amiri", "Scheherazade New", "serif"], "urdu": ["Noto Nastaliq Urdu", "serif"] }, fontSize: { "headline-lg": ["32px", { lineHeight: "42px", letterSpacing: "-0.015em", fontWeight: "500" }], "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "32px", fontWeight: "500" }], "display-hero-mobile": ["34px", { lineHeight: "44px", letterSpacing: "-0.01em", fontWeight: "600" }], "headline-lg-mobile": ["26px", { lineHeight: "34px", fontWeight: "500" }], "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "500" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }], "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }], "body-scholarly-lg": ["20px", { lineHeight: "36px", fontWeight: "400" }], "display-hero": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "600" }], "body-md": ["15px", { lineHeight: "24px", fontWeight: "400" }], "body-sm": ["13px", { lineHeight: "20px", fontWeight: "400" }] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100%; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }
+.font-amiri { font-family: 'Amiri', 'Scheherazade New', serif; }
+.font-urdu { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2.2; }
+</style></head><body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-lowest/85 backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.4)]"><div class="h-16 px-gutter-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-surface-container-low flex items-center justify-center text-primary shadow-[0_0_12px_rgba(212,175,55,0.15)]"><span class="material-symbols-outlined text-[22px]">auto_awesome</span></div><div class="flex flex-col"><span class="font-label-sm text-label-sm tracking-wider uppercase text-secondary">Shirazi Jurisprudence</span><h1 class="font-headline-sm text-headline-sm text-on-surface leading-none tracking-tight">Research</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="Global Scholarly Search" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-[22px]">search</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full">
+<!-- Interactive Research Desk Container -->
+<div class="flex flex-col w-full px-gutter-mobile space-y-space-md pb-6">
+<!-- Top Sub-Header & Scholarly Controls -->
+<div class="flex flex-col space-y-space-sm bg-surface-container-low/90 backdrop-blur-xl rounded-xl p-space-md shadow-md">
+<!-- Brand & Engine Heartbeat -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-space-sm">
+<div class="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-surface-container-lowest shadow-sm">
+<img alt="Shirazi Jurisprudential Seal" class="w-9 h-9 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VovR2uOfqkc2PHLUXNKtWH7DfLSuiOYCaya9RUQi8NVKKvGP3Q3i5Y-FKMTHkO8ZXLSutYta8cSdgr4zGxuKbZml9BAB_o9pMIVlngouObmTe6xxyRwoUdRFzR9Q-HolyORlSl5TqSHkK8N_EXvOhE2RD_Ara021tdyUg3i6bkal6UZ7KgagpBA0ZhCnOo-qe73vYcznI1JOsFNw-Rruk4thtNl8tec7EKjjAXIG9wR8lcu_GXiv4JZB_-"/>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center space-x-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary tracking-tight">SHIRAZI</span>
+<span class="text-outline text-body-sm">|</span>
+<span class="font-amiri text-xl font-bold text-primary-fixed" dir="rtl">شیرازی</span>
+</div>
+<div class="flex items-center space-x-1.5">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed">Server Connected (12ms)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center space-x-space-xs">
+<div class="flex items-center space-x-1 px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">wifi_tethering</span>
+<span>v4.8 Ultra</span>
+</div>
+<button aria-label="Juristic Preferences" class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Quick Selectors & Persona Switcher -->
+<div class="flex flex-col space-y-2 pt-1">
+<!-- Madhhab Horizontal Selector Pill -->
+<div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5">
+<div class="flex items-center bg-surface-container-highest px-3 py-1.5 rounded-full text-on-surface space-x-1.5 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-primary text-[16px]">account_balance</span>
+<span class="font-label-md text-label-md text-primary font-semibold">Hanafi</span>
+<span class="font-amiri text-sm text-primary font-semibold" dir="rtl">(المذهب الحنفي)</span>
+<span class="material-symbols-outlined text-outline text-[16px]">expand_more</span>
+</div>
+<button class="bg-surface-container px-3 py-1.5 rounded-full text-on-surface-variant font-label-md text-label-md shrink-0 hover:text-on-surface transition-colors">Shafi'i</button>
+<button class="bg-surface-container px-3 py-1.5 rounded-full text-on-surface-variant font-label-md text-label-md shrink-0 hover:text-on-surface transition-colors">Maliki</button>
+<button class="bg-surface-container px-3 py-1.5 rounded-full text-on-surface-variant font-label-md text-label-md shrink-0 hover:text-on-surface transition-colors">Hanbali</button>
+<button class="bg-surface-container px-3 py-1.5 rounded-full text-secondary-fixed-dim font-label-md text-label-md shrink-0 hover:text-secondary-fixed transition-colors flex items-center gap-1">Comparative <span class="font-amiri text-xs" dir="rtl">(مقارن)</span></button>
+</div>
+<!-- Persona Mode Segmented Control -->
+<div class="flex items-center p-1 bg-surface-container-lowest rounded-xl">
+<button class="flex-1 py-1.5 px-3 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center space-x-1.5 shadow-sm transition-all">
+<span class="material-symbols-outlined text-[15px]">school</span>
+<span class="font-label-md text-label-md">✦ Muhaqqiq (Academic)</span>
+</button>
+<button class="flex-1 py-1.5 px-3 rounded-lg text-on-surface-variant hover:text-on-surface flex items-center justify-center space-x-1.5 transition-all">
+<span class="material-symbols-outlined text-[15px]">gavel</span>
+<span class="font-label-md text-label-md">Mufti (Direct Verdict)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Active Research Thread Area -->
+<div class="flex flex-col space-y-space-md">
+<!-- Scholarly Query Bubble (User Input with RTL/LTR Dual Display) -->
+<div class="flex flex-col items-end w-full space-y-1.5">
+<div class="max-w-[92%] bg-surface-container-high rounded-2xl rounded-tr-xs p-space-md shadow-md text-right">
+<div class="flex items-center justify-end space-x-2 pb-1.5" dir="rtl">
+<span class="material-symbols-outlined text-primary text-[18px]">psychology_alt</span>
+<span class="font-amiri text-base font-bold text-primary mr-1.5">المسألة الفقهية المستفسر عنها:</span>
+</div>
+<p class="font-amiri text-xl text-on-surface leading-relaxed text-right" dir="rtl">
+            ما حكم المعاملات المالية بالعملات الرقمية المشفرة مثل البيتكوين وتعدينها وتداولها في الفقه الحنفي؟
+          </p>
+<div class="mt-2.5 pt-2 bg-surface-container/60 rounded-lg p-2.5 text-left">
+<div class="flex items-center space-x-1 text-on-surface-variant mb-1">
+<span class="material-symbols-outlined text-[14px]">translate</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Scholarly Translation</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-normal">
+              "What is the juristic ruling on financial transactions, mining, and trading of decentralized cryptocurrencies (e.g. Bitcoin) under Hanafi jurisprudence?"
+            </p>
+</div>
+<!-- Meta & Categorical Taxonomies -->
+<div class="flex flex-wrap items-center justify-end gap-1.5 mt-3 pt-1">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary font-label-sm text-label-sm"># Fiqh al-Mu'amalat</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-tertiary font-label-sm text-label-sm flex items-center gap-1"># Contemporary <span class="font-amiri text-xs" dir="rtl">(نوازل)</span></span>
+<span class="text-outline text-label-sm flex items-center ml-1">
+<span class="material-symbols-outlined text-[12px] mr-1">schedule</span>Today, 10:24 AM
+            </span>
+</div>
+</div>
+</div>
+<!-- Live Research Reasoning Pipeline (Animated Progress Stepper) -->
+<div class="flex flex-col bg-surface-container-lowest/80 backdrop-blur-md rounded-xl p-space-md space-y-space-sm shadow-md">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">account_tree</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold tracking-wide uppercase">Takhrij &amp; Isnad Synthesis Engine</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/40 text-secondary-fixed font-label-sm text-label-sm">3 of 3 Stages Complete</span>
+</div>
+<div class="space-y-2.5">
+<!-- Step 1: Maktaba Shamela -->
+<div class="flex items-start space-x-space-sm p-2 rounded-lg bg-surface-container-low/60">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container mt-0.5 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">Searching Maktaba Shamela Database (8,595 classical texts)</span>
+<span class="font-label-sm text-label-sm text-secondary">0.34s</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Retrieved 14 primary source treatises in Radd al-Muhtar, Al-Mabsut, &amp; Badai'</span>
+</div>
+</div>
+<!-- Step 2: Hadith Isnad Verification -->
+<div class="flex items-start space-x-space-sm p-2 rounded-lg bg-surface-container-low/60">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container mt-0.5 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[15px]">check</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">Cross-referencing Hadith Isnad Chains</span>
+<span class="font-label-sm text-label-sm text-secondary">0.51s</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Validated hadith prohibition on Gharar (bay' al-gharar) in Sahihayn and Sunan</span>
+</div>
+</div>
+<!-- Step 3: Fiqh Usul Synthesis -->
+<div class="flex items-start space-x-space-sm p-2 rounded-lg bg-primary/10">
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[15px] animate-spin">cyclone</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-primary font-medium">Synthesizing Juristic Precedent (Takhrij al-Furu')</span>
+<span class="font-label-sm text-label-sm text-primary animate-pulse">Processing</span>
+</div>
+<span class="font-body-sm text-body-sm text-tertiary">Applying Qawa'id Fiqhiyyah: <span class="font-amiri text-sm" dir="rtl">«الضرر يزال»</span> &amp; <span class="font-amiri text-sm" dir="rtl">«الأصل في الأشياء الإباحة»</span></span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Scholarly Response Card (Digital Manuscript Aesthetic) -->
+<div class="flex flex-col bg-surface-container-low rounded-2xl overflow-hidden shadow-xl">
+<!-- Card Top Illumination Strip & Scholarly Badge -->
+<div class="h-1.5 w-full bg-gradient-to-r from-primary-container via-secondary-container to-primary"></div>
+<div class="p-space-md space-y-space-md">
+<!-- Synthesis Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-space-xs">
+<div class="w-7 h-7 rounded-md bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<h2 class="font-amiri text-xl font-bold text-on-surface leading-tight" dir="rtl">خلاصة التحقيق الفقهي</h2>
+<span class="font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider">Juristic Synthesis • Fatwa Dossier #892</span>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/30 text-secondary-fixed text-label-sm font-label-sm flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Authenticated Mu'tamad</span>
+</span>
+</div>
+<!-- Scripture Matn Block with Calligraphic Gold Brackets -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest/90 relative overflow-hidden text-center shadow-inner">
+<div class="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-primary/5 blur-2xl pointer-events-none"></div>
+<span class="text-tertiary font-headline-md text-headline-md leading-none">«</span>
+<p class="font-amiri text-2xl font-bold text-on-surface text-center px-4 leading-loose tracking-wide" dir="rtl">
+              وَأَحَلَّ اللَّهُ الْبَيْعَ وَحَرَّمَ الرِّبَا
+            </p>
+<span class="text-tertiary font-headline-md text-headline-md leading-none">»</span>
+<div class="mt-2 text-outline font-label-sm text-label-sm tracking-wide">
+<span class="font-amiri text-base font-semibold" dir="rtl">سورة البقرة • الآية ٢٧٥</span> [Surah Al-Baqarah: 275]
+            </div>
+</div>
+<!-- Academic Matn Breakdown & Comparison -->
+<div class="space-y-3 font-body-md text-body-md text-on-surface-variant leading-relaxed">
+<p class="font-amiri text-lg text-on-surface leading-loose text-justify" dir="rtl">
+              وفق المعتمد في المذهب الحنفي وتخريج المجامع الفقهية المعاصرة (كمجمع الفقه الإسلامي الدولي وهيئة المحاسبة والمراجعة للمؤسسات المالية الإسلامية AAOIFI)، يدور تكييف العملات المشفرة على ركنين أصيلين:
+            </p>
+<!-- Dual Scholarly Principles Accordion Cards -->
+<div class="grid grid-cols-1 gap-2 pt-1">
+<div class="p-space-sm bg-surface-container rounded-lg">
+<div class="flex items-center justify-between text-primary mb-1" dir="rtl">
+<span class="flex items-center space-x-1.5 font-amiri text-lg font-bold">
+<span class="w-2 h-2 rounded-full bg-primary inline-block mr-1.5"></span>
+<span>١. صفة المالية (Maliyyah):</span>
+</span>
+<span class="font-amiri text-sm font-semibold text-outline" dir="rtl">التموّل الفعلي</span>
+</div>
+<p class="font-amiri text-base leading-relaxed text-on-surface-variant text-justify" dir="rtl">
+                  المال في اصطلاح الحنفية: ما يميل إليه طبع الإنسان ويجري فيه البذل والمنع (رد المحتار). والعملات المشفرة تحقق صفة المالية بالعرف الخاص (العرف الرقمي) لكونها تملك قيمة تبادلية مدخرة متراضى عليها بين المتعاملين.
+                </p>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg">
+<div class="flex items-center justify-between text-secondary mb-1" dir="rtl">
+<span class="flex items-center space-x-1.5 font-amiri text-lg font-bold">
+<span class="w-2 h-2 rounded-full bg-secondary inline-block mr-1.5"></span>
+<span>٢. صفة التقوّم (Taqawwum):</span>
+</span>
+<span class="font-amiri text-sm font-semibold text-outline" dir="rtl">الإباحة الشرعية</span>
+</div>
+<p class="font-amiri text-base leading-relaxed text-on-surface-variant text-justify" dir="rtl">
+                  التقوم مشروط بإباحة الشارع للانتفاع. فإذا خلت العملة من الغرر الفاحش والقمار وكانت معتمدة كوسيط للتبادل دون استغلال في محظورات قطعية، عُدّت مالاً متقوماً تجري عليه أحكام الصرف (الصرف الشرعي) بشرط التقابض الفوري الحقيقي أو الحكمي.
+                </p>
+</div>
+</div>
+<!-- Scholar Conclusion Note with Urdu / Arabic Annotations -->
+<div class="p-3 bg-surface-container-high/60 rounded-lg flex items-start space-x-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px] shrink-0 mt-1">lightbulb</span>
+<div class="flex flex-col flex-1 space-y-1">
+<p class="font-amiri text-base text-on-surface leading-loose text-justify" dir="rtl">
+<strong class="text-primary font-bold">الترجيح المعاصر:</strong> يجوز التعامل بها كوسيط تجاري وتملكها ما لم تطرأ شبهة الغرر والمقامرة المجهولة، مع لزوم دفع زكاتها عند بلوغ النصاب الشرعي وحولان الحول (عروض تجارة أو نقدية).
+              </p>
+<div class="mt-1 pt-1.5 border-t border-surface-container-highest/60" dir="rtl">
+<p class="font-urdu text-xs text-on-surface-variant" dir="rtl">
+<span class="text-secondary font-bold">خلاصۂ فقہی (اردو حاشیہ):</span> جدید فقہی تکییف کے مطابق ڈیجیٹل کرنسی کا لین دین بذات خود جائز ہے، بشرطیکہ وہ قمار، دھوکہ اور غرر فاحش سے خالی ہو۔
+              </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Horizontal Scrollable Citations Badges -->
+<div class="flex flex-col space-y-1.5 pt-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1 text-primary">menu_book</span> Primary Jurisprudential Citations <span class="font-amiri text-xs font-semibold ml-1" dir="rtl">(المصادر الفقهية)</span>
+</span>
+<div class="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+<div class="flex items-center space-x-1.5 bg-surface-container px-3 py-2 rounded-lg shrink-0 cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary text-[16px]">bookmark</span>
+<span class="font-amiri text-sm text-on-surface font-semibold" dir="rtl">رد المحتار على الدر المختار (ج ٤ ص ٥٠١)</span>
+</div>
+<div class="flex items-center space-x-1.5 bg-surface-container px-3 py-2 rounded-lg shrink-0 cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+<span class="font-amiri text-sm text-on-surface font-semibold" dir="rtl">المعايير الشرعية - أيوفي (معيار رقم ٥٩)</span>
+</div>
+<div class="flex items-center space-x-1.5 bg-surface-container px-3 py-2 rounded-lg shrink-0 cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-tertiary text-[16px]">library_books</span>
+<span class="font-amiri text-sm text-on-surface font-semibold" dir="rtl">بحوث في قضايا فقهية معاصرة (ج ٢ ص ٨٩)</span>
+</div>
+</div>
+</div>
+<!-- Fatwa Card Action Bar -->
+<div class="flex items-center justify-between pt-2 border-t border-surface-container-highest">
+<div class="flex items-center space-x-1">
+<button aria-label="Listen Arabic Recitation" class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+</button>
+<button aria-label="Copy Fatwa Text" class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button aria-label="Export PDF Dossier" class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+</button>
+<button aria-label="View Isnad Lineage Graph" class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+</button>
+</div>
+<button class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[16px]">bookmark_add</span>
+<span>Save Fatwa</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Persistent Elevated Frosted Query Console -->
+<div class="sticky bottom-2 w-full z-40 bg-surface-container-low/95 backdrop-blur-2xl rounded-2xl p-2.5 shadow-2xl space-y-2">
+<!-- Input Area Row -->
+<div class="flex items-end space-x-2">
+<button aria-label="Attach Document or Manuscript" class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[20px]">attachment</span>
+</button>
+<div class="flex-1 min-w-0 bg-surface-container-lowest rounded-xl px-3 py-2 flex items-center space-x-2 focus-within:bg-surface-container transition-all">
+<textarea class="w-full bg-transparent text-on-surface placeholder-outline text-body-md font-body-md resize-none outline-none leading-tight py-1 max-h-24" placeholder="Ask a fiqhi question... (e.g., كتاب البيوع، أحكام الزكاة)" rows="1"></textarea>
+<!-- Audio Waveform Live Toggle -->
+<button aria-label="Voice Query" class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary shrink-0 hover:bg-surface-bright transition-colors relative group">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-secondary"></span>
+</button>
+</div>
+<!-- Submit Prompt Action Button -->
+<button aria-label="Send Scholarly Inquiry" class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 hover:bg-primary-fixed transition-transform active:scale-95 shadow-md">
+<span class="material-symbols-outlined text-[20px]">edit_note</span>
+</button>
+</div>
+<!-- Quick Suggestion Sparks -->
+<div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5 text-label-sm font-label-sm text-outline">
+<span class="text-tertiary shrink-0 flex items-center"><span class="material-symbols-outlined text-[13px] mr-1">auto_awesome</span>Suggested:</span>
+<button class="bg-surface-container px-2.5 py-1 rounded-full whitespace-nowrap hover:text-on-surface transition-colors font-amiri text-sm" dir="rtl">أحكام بيع السلم</button>
+<button class="bg-surface-container px-2.5 py-1 rounded-full whitespace-nowrap hover:text-on-surface transition-colors font-amiri text-sm" dir="rtl">حكم التأمين التكافلي</button>
+<button class="bg-surface-container px-2.5 py-1 rounded-full whitespace-nowrap hover:text-on-surface transition-colors font-amiri text-sm" dir="rtl">مسائل الصرف في الذهب</button>
+</div>
+</div>
+</div>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.5)]" data-active-classes="text-primary"><div class="h-20 px-gutter-mobile flex justify-around items-center"><a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] transition-colors text-primary" data-path="research" href="#"><span class="material-symbols-outlined text-[24px]">auto_awesome</span><span class="font-label-md text-label-md">Research</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="library" href="#"><span class="material-symbols-outlined text-[24px]">menu_book</span><span class="font-label-md text-label-md">Library</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="archive" href="#"><span class="material-symbols-outlined text-[24px]">bookmark</span><span class="font-label-md text-label-md">Archive</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-[24px]">tune</span><span class="font-label-md text-label-md">Settings</span></a></div></nav></body></html>

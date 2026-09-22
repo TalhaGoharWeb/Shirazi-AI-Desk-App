@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_admin" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Inter:wght@400;500;600;700&amp;family=Noto+Nastaliq+Urdu:wght@400;700&amp;family=Noto+Serif:ital,wght@0,400;0,500;0,600;1,400&amp;family=Scheherazade+New:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-secondary-fixed-variant": "#005236", "on-tertiary-container": "#534400", "outline-variant": "#4d4635", "surface-container": "#1c211e", "on-tertiary": "#3b2f00", "on-tertiary-fixed": "#231b00", "outline": "#99907c", "secondary": "#4edea3", "primary-fixed-dim": "#e9c349", "tertiary": "#e7cd78", "surface-bright": "#353a38", "on-error": "#690005", "background": "#0f1412", "surface-container-lowest": "#0a0f0d", "surface-dim": "#0f1412", "inverse-primary": "#735c00", "primary-container": "#d4af37", "on-background": "#dfe4e0", "secondary-container": "#00a572", "secondary-fixed": "#6ffbbe", "error-container": "#93000a", "on-tertiary-fixed-variant": "#554500", "tertiary-fixed": "#fbe189", "error": "#ffb4ab", "on-surface": "#dfe4e0", "tertiary-container": "#cab25f", "on-secondary-container": "#00311f", "surface-container-high": "#262b29", "secondary-fixed-dim": "#4edea3", "surface-container-highest": "#313633", "primary": "#f2ca50", "primary-fixed": "#ffe088", "surface-variant": "#313633", "on-secondary-fixed": "#002113", "surface-tint": "#e9c349", "on-surface-variant": "#d0c5af", "on-primary": "#3c2f00", "inverse-on-surface": "#2c322f", "on-primary-fixed": "#241a00", "on-secondary": "#003824", "tertiary-fixed-dim": "#dec571", "surface": "#0f1412", "on-primary-fixed-variant": "#574500", "on-error-container": "#ffdad6", "on-primary-container": "#554300", "inverse-surface": "#dfe4e0", "surface-container-low": "#181d1a" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-md": "1rem", "space-lg": "1.5rem", "gutter": "1.5rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "margin-mobile": "1rem", "margin": "2.5rem", "gutter-mobile": "0.75rem", "space-sm": "0.5rem" }, fontFamily: { "headline-lg": ["Noto Serif"], "headline-sm": ["Noto Serif"], "headline-md": ["Noto Serif"], "display-hero-mobile": ["Noto Serif"], "headline-lg-mobile": ["Noto Serif"], "label-sm": ["Inter"], "label-md": ["Inter"], "body-lg": ["Inter"], "body-scholarly-lg": ["Amiri", "Scheherazade New", "Noto Serif"], "display-hero": ["Noto Serif"], "body-md": ["Inter"], "body-sm": ["Inter"], "arabic": ["Amiri", "Scheherazade New", "serif"], "urdu": ["Noto Nastaliq Urdu", "serif"] }, fontSize: { "headline-lg": ["32px", { lineHeight: "42px", letterSpacing: "-0.015em", fontWeight: "500" }], "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "32px", fontWeight: "500" }], "display-hero-mobile": ["34px", { lineHeight: "44px", letterSpacing: "-0.01em", fontWeight: "600" }], "headline-lg-mobile": ["26px", { lineHeight: "34px", fontWeight: "500" }], "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "500" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }], "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }], "body-scholarly-lg": ["20px", { lineHeight: "36px", fontWeight: "400" }], "display-hero": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "600" }], "body-md": ["15px", { lineHeight: "24px", fontWeight: "400" }], "body-sm": ["13px", { lineHeight: "20px", fontWeight: "400" }] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100%; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style></head><body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_16px_rgba(0,0,0,0.55)]"><div class="h-16 px-gutter-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/30 flex items-center justify-center text-secondary shadow-[0_0_12px_rgba(78,222,163,0.15)]"><span class="material-symbols-outlined text-[20px]">admin_panel_settings</span></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Superuser</span><span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span></div><h1 class="font-headline-sm text-headline-sm text-on-surface leading-none tracking-tight">Admin System Metrics</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="Sync Database" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-secondary transition-colors"><span class="material-symbols-outlined text-[22px]">sync</span></button><a aria-label="Exit Admin Mode" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" data-path="shirazi-research-desk" href="#"><span class="material-symbols-outlined text-[22px]">close</span></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full px-margin-mobile space-y-space-lg pb-space-xl">
+<!-- Secondary Top Context & Sub-navigation Tabs -->
+<section class="flex flex-col space-y-space-sm pt-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm tracking-wide flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span>
+          Cluster Telemetry v3.4.2
+        </span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant/80 dir-rtl font-arabic">إدارة استدلال الذكاء وحوض المفاتيح</span>
+</div>
+</div>
+<!-- Navigation Segment Pill Control -->
+<div class="grid grid-cols-3 p-1 rounded-xl bg-surface-container-lowest shadow-sm gap-1">
+<a class="py-2 text-center rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+        Inquiries Log
+      </a>
+<a class="py-2 text-center rounded-lg font-label-md text-label-md bg-surface-container-high text-primary shadow-sm flex items-center justify-center gap-1" href="#">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+        API &amp; Keys
+      </a>
+<a class="py-2 text-center rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+        Lucene Index
+      </a>
+</div>
+</section>
+<!-- High-Level Cluster Health & Quota Pulse -->
+<section class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">dns</span>
+        Pool Health Pulse
+      </h2>
+<button class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-secondary font-label-sm text-label-sm flex items-center gap-1 transition-all" id="refreshClusterBtn">
+<span class="material-symbols-outlined text-[16px]">autorenew</span>
+        Auto: 10s
+      </button>
+</div>
+<!-- KPI Metric Mosaic -->
+<div class="grid grid-cols-3 gap-2.5">
+<!-- Active Nodes -->
+<div class="rounded-xl p-3 bg-surface-container-lowest shadow-md flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-2 -bottom-2 w-12 h-12 bg-secondary/5 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Active Pool</span>
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(78,222,163,0.8)]"></span>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-semibold">14</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">/ 18</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary mt-1 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> 77.8% Healthy
+        </span>
+</div>
+<!-- Rate-Limited (429) -->
+<div class="rounded-xl p-3 bg-surface-container-lowest shadow-md flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-2 -bottom-2 w-12 h-12 bg-tertiary/5 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Cooling (429)</span>
+<span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(231,205,120,0.8)] animate-pulse"></span>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-tertiary font-semibold">3</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Keys</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary-fixed-dim mt-1">
+          Backoff: ~120s
+        </span>
+</div>
+<!-- Errored (5xx / 401) -->
+<div class="rounded-xl p-3 bg-surface-container-lowest shadow-md flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-2 -bottom-2 w-12 h-12 bg-error/10 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Revoked/Err</span>
+<span class="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.8)]"></span>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-error font-semibold">1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fatal</span>
+</div>
+<span class="font-label-sm text-label-sm text-error mt-1 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">warning</span> Action req.
+        </span>
+</div>
+</div>
+<!-- Aggregate Throughput Sparkline Visual Card -->
+<div class="rounded-xl p-4 bg-surface-container-low shadow-sm flex flex-col space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Global Concurrency &amp; Load</span>
+<p class="font-body-sm text-body-sm text-on-surface">342 Inferences / min • 99.4% Syntactic Validity</p>
+</div>
+<div class="text-right">
+<span class="font-label-md text-label-md text-secondary font-semibold">41.2 ms</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant">p95 Latency</span>
+</div>
+</div>
+<!-- SVG Throughput Sparkline -->
+<div class="w-full h-11">
+<svg class="w-full h-full text-secondary" fill="none" stroke="currentColor" viewbox="0 0 340 44">
+<defs>
+<lineargradient id="loadGrad" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="currentColor" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="currentColor" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<path d="M0 32 Q 25 35, 45 28 T 90 22 T 135 34 T 180 18 T 225 15 T 270 24 T 315 12 T 340 16 L 340 44 L 0 44 Z" fill="url(#loadGrad)" stroke="none"></path>
+<path d="M0 32 Q 25 35, 45 28 T 90 22 T 135 34 T 180 18 T 225 15 T 270 24 T 315 12 T 340 16" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</section>
+<!-- Live Diagnostic Error Drawer (Interactive Micro-Alerts) -->
+<section class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Real-Time Error Stream</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">3 Incidents Flagged</span>
+</div>
+<div class="space-y-2">
+<!-- Error 1: Gemini 429 -->
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col space-y-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="flex items-center justify-between pl-1">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-tertiary/15 text-tertiary font-label-sm text-label-sm font-semibold">429</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Key #08 (Google Gemini 1.5 Pro)</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">4m ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-1">
+<code class="text-tertiary text-[11px] font-mono">Resource Exhausted: Quota exceeded for project-shirazi-992.</code>
+          Automatic failover redirected active query queue to Groq backup cluster.
+        </p>
+<div class="flex items-center justify-between pt-1 pl-1">
+<span class="font-label-sm text-label-sm text-tertiary-fixed flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">hourglass_top</span> Reset in 56s
+          </span>
+<button class="px-2.5 py-1 rounded bg-surface-container-high text-on-surface text-label-sm font-label-sm hover:text-primary transition-colors" onclick="triggerQuickAction('retest-08')">
+            Probe Heartbeat
+          </button>
+</div>
+</div>
+<!-- Error 2: Groq 503 -->
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col space-y-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex items-center justify-between pl-1">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-error/15 text-error font-label-sm text-label-sm font-semibold">503</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Key #14 (Groq Llama-3-70B)</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">18m ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-1">
+<code class="text-error text-[11px] font-mono">Service Unavailable: Timeout &gt; 15000ms.</code>
+          Inference Gateway socket dropped abruptly during Hadith cross-referencing.
+        </p>
+<div class="flex items-center justify-between pt-1 pl-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Automated retry: Attempt 2/3</span>
+<button class="px-2.5 py-1 rounded bg-surface-container-high text-on-surface text-label-sm font-label-sm hover:text-primary transition-colors" onclick="triggerQuickAction('retest-14')">
+            Flush Connection
+          </button>
+</div>
+</div>
+<!-- Error 3: OpenRouter 401 Revoked -->
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col space-y-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex items-center justify-between pl-1">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-error/15 text-error font-label-sm text-label-sm font-semibold">401</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Key #03 (OpenRouter Tier-2)</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1h ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-1">
+<code class="text-error text-[11px] font-mono">Unauthorized: Key credentials revoked upstream or expired.</code>
+          Key quarantined automatically to prevent query dropouts.
+        </p>
+<div class="flex items-center justify-between pt-1 pl-1">
+<span class="font-label-sm text-label-sm text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock_clock</span> Revoked Token
+          </span>
+<div class="flex gap-1.5">
+<button class="px-2.5 py-1 rounded bg-primary-container text-on-primary font-label-sm text-label-sm font-medium hover:brightness-110" onclick="triggerQuickAction('replace-03')">
+              Replace Key
+            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Provisioning Suite: "+ Add New API Key" Collapsible Panel -->
+<section class="flex flex-col space-y-space-sm">
+<div class="rounded-xl p-4 bg-surface-container-low shadow-md flex flex-col space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add_moderator</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface leading-tight">Provision Cluster Node</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Inject zero-trust API credential into load balancer</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" id="toggleFormBtn">
+<span class="material-symbols-outlined text-[20px]" id="toggleFormIcon">expand_less</span>
+</button>
+</div>
+<form class="flex flex-col space-y-3.5 pt-1" id="keyProvisionForm" onsubmit="event.preventDefault(); injectKeyToCluster();">
+<!-- Model Provider Dropdown -->
+<div class="flex flex-col space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="providerSelect">Upstream Inference Provider</label>
+<div class="relative">
+<select class="w-full h-11 px-3 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm appearance-none focus:outline-none focus:bg-surface-bright transition-all pr-10" id="providerSelect">
+<option value="gemini">Google Gemini 1.5 Pro (Workspace / AI Studio)</option>
+<option value="groq">Groq Cloud (Llama-3-70B &amp; Mixtral 8x7B)</option>
+<option value="anthropic">Anthropic Claude 3.5 Sonnet (Direct Bedrock)</option>
+<option value="openai">OpenAI GPT-4o Omni (High Quota Enterprise)</option>
+<option value="deepseek">DeepSeek V2.5 / Coder (Academic Scholarly)</option>
+</select>
+<div class="absolute right-3 top-3 pointer-events-none text-on-surface-variant flex items-center">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</div>
+</div>
+</div>
+<!-- Raw API Key Secure Input -->
+<div class="flex flex-col space-y-1">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface" for="rawKeyInput">API Token / Secret Key</label>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">enhanced_encryption</span> Client-Side Scrimmed
+            </span>
+</div>
+<div class="relative flex items-center">
+<input class="w-full h-11 pl-3 pr-11 rounded-lg bg-surface-container-highest text-on-surface font-mono text-[13px] placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-bright transition-all" id="rawKeyInput" placeholder="AIzaSy... or sk-proj-..." required="" type="password"/>
+<button class="absolute right-2 w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="toggleKeyVisibility()" type="button">
+<span class="material-symbols-outlined text-[18px]" id="eyeIcon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Priority Tier & Concurrency Limits Dual Row -->
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Priority Tier -->
+<div class="flex flex-col space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="tierSelect">Dispatch Tier</label>
+<select class="w-full h-11 px-2.5 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm focus:outline-none focus:bg-surface-bright" id="tierSelect">
+<option value="1">Tier 1: Primary Fast</option>
+<option value="2">Tier 2: Failover</option>
+<option value="3">Tier 3: Batch Tasks</option>
+</select>
+</div>
+<!-- Concurrency Limit (RPM) -->
+<div class="flex flex-col space-y-1">
+<label class="font-label-md text-label-md text-on-surface" for="rpmLimitInput">Rate Ceiling (RPM)</label>
+<div class="relative flex items-center">
+<input class="w-full h-11 px-3 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm focus:outline-none focus:bg-surface-bright" id="rpmLimitInput" max="10000" min="1" type="number" value="60"/>
+<span class="absolute right-2.5 text-on-surface-variant font-label-sm text-label-sm pointer-events-none">req/m</span>
+</div>
+</div>
+</div>
+<!-- Action / Verify Button -->
+<div class="pt-2">
+<button class="w-full h-12 rounded-xl bg-primary text-on-primary font-headline-sm text-headline-sm font-semibold flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(242,202,80,0.25)] hover:bg-primary-fixed-dim active:scale-[0.99] transition-all" id="injectBtn" type="submit">
+<span class="material-symbols-outlined text-[20px]" id="injectIcon">health_and_safety</span>
+<span id="injectText">Verify &amp; Inject to Cluster</span>
+</button>
+</div>
+<!-- Micro status feedback container -->
+<div class="hidden p-2.5 rounded-lg bg-surface-container text-body-sm font-body-sm text-secondary flex items-center gap-2" id="handshakeResult">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Credential validated via SSL handshake ping (32ms). Added to pool.</span>
+</div>
+</form>
+</div>
+</section>
+<!-- Key Pool Table / Cards Section -->
+<section class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Active Cluster Node Pool</h2>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-semibold">
+          18 Registered
+        </span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-1.5 rounded hover:text-on-surface transition-colors" onclick="sortPoolByUsage()" title="Sort by quota consumption">
+<span class="material-symbols-outlined text-[18px]">sort</span>
+</button>
+</div>
+</div>
+<!-- Cluster Nodes List -->
+<div class="space-y-3" id="nodesContainer">
+<!-- Node 1: Gemini Primary -->
+<div class="p-4 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col space-y-3 relative group">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary font-semibold font-label-sm text-label-sm">
+              #01
+            </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface text-[16px]">Google Gemini 1.5 Pro</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-medium">Tier 1</span>
+</div>
+<span class="font-mono text-[11px] text-on-surface-variant">AIzaSyB9***fK82 • Shirazi Research Primary</span>
+</div>
+</div>
+<!-- Status Toggle Switch -->
+<div class="flex items-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" onchange="toggleNodeState(this, '01')" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Quota bar & Counter -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant">Quota Consumption (Daily Limit)</span>
+<span class="text-on-surface font-semibold">68% • 12,450 / 18,000 req</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- Node Meta Details & Actions -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-3 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[14px]">speed</span> 38 req/m
+            </span>
+<span>p50: 380ms</span>
+<span class="text-secondary flex items-center gap-0.5 font-medium">Active</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant hover:text-primary font-label-sm text-label-sm flex items-center gap-1 transition-colors" onclick="rotateKey('01')">
+<span class="material-symbols-outlined text-[14px]">cached</span> Rotate
+            </button>
+<button class="p-1 rounded bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" onclick="confirmRemoveKey('01')" title="Decommission Node">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Node 2: Groq Llama 3 70B -->
+<div class="p-4 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col space-y-3 relative group">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary font-semibold font-label-sm text-label-sm">
+              #05
+            </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface text-[16px]">Groq Cloud (Llama-3-70B)</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-medium">Tier 1</span>
+</div>
+<span class="font-mono text-[11px] text-on-surface-variant">gsk_7N1x***9LmQ • Fast Matn Analysis</span>
+</div>
+</div>
+<!-- Status Toggle Switch -->
+<div class="flex items-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" onchange="toggleNodeState(this, '05')" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Quota bar & Counter -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant">Quota Consumption (Daily Limit)</span>
+<span class="text-on-surface font-semibold">91% • 27,300 / 30,000 req</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 91%;"></div>
+</div>
+</div>
+<!-- Node Meta Details & Actions -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-3 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[14px]">bolt</span> 84 req/m
+            </span>
+<span>p50: 120ms</span>
+<span class="text-tertiary flex items-center gap-0.5 font-medium">Near Limit</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant hover:text-primary font-label-sm text-label-sm flex items-center gap-1 transition-colors" onclick="rotateKey('05')">
+<span class="material-symbols-outlined text-[14px]">cached</span> Rotate
+            </button>
+<button class="p-1 rounded bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" onclick="confirmRemoveKey('05')" title="Decommission Node">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Node 3: Claude 3.5 Sonnet (Failover Tier) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col space-y-3 relative group">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary font-semibold font-label-sm text-label-sm">
+              #07
+            </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface text-[16px]">Claude 3.5 Sonnet</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-medium">Tier 2 Failover</span>
+</div>
+<span class="font-mono text-[11px] text-on-surface-variant">sk-ant-api03***84K • Comparative Juristic Reasoning</span>
+</div>
+</div>
+<!-- Status Toggle Switch -->
+<div class="flex items-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" onchange="toggleNodeState(this, '07')" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Quota bar & Counter -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant">Quota Consumption (Daily Limit)</span>
+<span class="text-on-surface font-semibold">14% • 1,420 / 10,000 req</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 14%;"></div>
+</div>
+</div>
+<!-- Node Meta Details & Actions -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-3 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">pause_circle</span> Standby
+            </span>
+<span>p50: 640ms</span>
+<span class="text-secondary flex items-center gap-0.5 font-medium">Ready</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant hover:text-primary font-label-sm text-label-sm flex items-center gap-1 transition-colors" onclick="rotateKey('07')">
+<span class="material-symbols-outlined text-[14px]">cached</span> Rotate
+            </button>
+<button class="p-1 rounded bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" onclick="confirmRemoveKey('07')" title="Decommission Node">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Node 4: Disabled / Quarantined Key -->
+<div class="p-4 rounded-xl bg-surface-container-lowest/60 shadow-sm flex flex-col space-y-3 relative group opacity-75">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-error font-semibold font-label-sm text-label-sm">
+              #03
+            </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface text-[16px]">OpenRouter Auto-Cluster</span>
+<span class="px-1.5 py-0.5 rounded bg-error-container text-error font-label-sm text-label-sm font-medium">Quarantined</span>
+</div>
+<span class="font-mono text-[11px] text-on-surface-variant">sk-or-v1-***043a • Fallback Aggregator</span>
+</div>
+</div>
+<!-- Status Toggle Switch -->
+<div class="flex items-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" onchange="toggleNodeState(this, '03')" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm pt-1">
+<span class="text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">error_outline</span> 401 Invalid Token
+          </span>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container-high text-primary font-label-sm text-label-sm hover:underline" onclick="triggerQuickAction('replace-03')">
+              Renew Token
+            </button>
+<button class="p-1 rounded bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" onclick="confirmRemoveKey('03')" title="Decommission Node">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Modal Dialogue for Deletion Confirmation (Embedded Flow) -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-container-lowest/80 backdrop-blur-sm" id="deleteModal">
+<div class="w-full max-w-xs rounded-2xl bg-surface-container-low p-5 shadow-2xl space-y-4">
+<div class="w-10 h-10 rounded-full bg-error/15 text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">warning</span>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Decommission Key?</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+          This token will be permanently decoupled from the load balancer pool. Active sessions will fail over instantly.
+        </p>
+</div>
+<div class="flex items-center justify-end space-x-2 pt-2">
+<button class="px-3.5 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md hover:bg-surface-bright transition-colors" onclick="closeDeleteModal()">
+          Cancel
+        </button>
+<button class="px-3.5 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold hover:brightness-110 transition-all shadow-sm" onclick="executeKeyRemoval()">
+          Disconnect Key
+        </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  let pendingDeleteKeyId = null;
+
+  function toggleKeyVisibility() {
+    const input = document.getElementById('rawKeyInput');
+    const icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      input.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  }
+
+  const toggleFormBtn = document.getElementById('toggleFormBtn');
+  const keyProvisionForm = document.getElementById('keyProvisionForm');
+  const toggleFormIcon = document.getElementById('toggleFormIcon');
+
+  if (toggleFormBtn) {
+    toggleFormBtn.addEventListener('click', () => {
+      const isHidden = keyProvisionForm.classList.contains('hidden');
+      if (isHidden) {
+        keyProvisionForm.classList.remove('hidden');
+        toggleFormIcon.textContent = 'expand_less';
+      } else {
+        keyProvisionForm.classList.add('hidden');
+        toggleFormIcon.textContent = 'expand_more';
+      }
+    });
+  }
+
+  function injectKeyToCluster() {
+    const injectBtn = document.getElementById('injectBtn');
+    const injectIcon = document.getElementById('injectIcon');
+    const injectText = document.getElementById('injectText');
+    const handshakeResult = document.getElementById('handshakeResult');
+
+    // Simulate verification state
+    injectBtn.disabled = true;
+    injectIcon.textContent = 'sync';
+    injectIcon.classList.add('animate-spin');
+    injectText.textContent = 'Running Zero-Trust Probe...';
+
+    setTimeout(() => {
+      injectBtn.disabled = false;
+      injectIcon.classList.remove('animate-spin');
+      injectIcon.textContent = 'check_circle';
+      injectText.textContent = 'Token Injected Successfully!';
+
+      handshakeResult.classList.remove('hidden');
+
+      setTimeout(() => {
+        injectIcon.textContent = 'health_and_safety';
+        injectText.textContent = 'Verify & Inject to Cluster';
+        document.getElementById('rawKeyInput').value = '';
+      }, 3500);
+    }, 1100);
+  }
+
+  function triggerQuickAction(action) {
+    const btn = event.currentTarget;
+    const origText = btn.textContent;
+    btn.textContent = 'Handshaking...';
+    btn.classList.add('opacity-70');
+    setTimeout(() => {
+      btn.textContent = 'Resolved ✓';
+      btn.classList.remove('opacity-70');
+      setTimeout(() => {
+        btn.textContent = origText;
+      }, 2000);
+    }, 900);
+  }
+
+  function toggleNodeState(checkbox, keyId) {
+    const card = checkbox.closest('.rounded-xl');
+    if (!checkbox.checked) {
+      card.classList.add('opacity-50');
+    } else {
+      card.classList.remove('opacity-50');
+    }
+  }
+
+  function rotateKey(keyId) {
+    const btn = event.currentTarget;
+    const icon = btn.querySelector('.material-symbols-outlined');
+    icon.classList.add('animate-spin');
+    setTimeout(() => {
+      icon.classList.remove('animate-spin');
+      btn.classList.add('text-secondary');
+      setTimeout(() => btn.classList.remove('text-secondary'), 1500);
+    }, 800);
+  }
+
+  function confirmRemoveKey(keyId) {
+    pendingDeleteKeyId = keyId;
+    document.getElementById('deleteModal').classList.remove('hidden');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    pendingDeleteKeyId = null;
+  }
+
+  function executeKeyRemoval() {
+    if (pendingDeleteKeyId) {
+      const cards = document.querySelectorAll('#nodesContainer > div');
+      cards.forEach(card => {
+        if (card.innerText.includes('#' + pendingDeleteKeyId)) {
+          card.style.transition = 'all 0.3s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.95)';
+          setTimeout(() => card.remove(), 300);
+        }
+      });
+    }
+    closeDeleteModal();
+  }
+
+  function sortPoolByUsage() {
+    const container = document.getElementById('nodesContainer');
+    const nodes = Array.from(container.children);
+    nodes.reverse().forEach(node => container.appendChild(node));
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.6)]" data-active-classes="text-secondary"><div class="h-20 px-gutter-mobile flex justify-around items-center"><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="admin-corpus-management" href="#"><span class="material-symbols-outlined text-[24px]">database</span><span class="font-label-md text-label-md">Corpus</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="admin-isnad-verification" href="#"><span class="material-symbols-outlined text-[24px]">verified</span><span class="font-label-md text-label-md">Verification</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] transition-colors text-secondary" data-path="admin-system-metrics" href="#"><span class="material-symbols-outlined text-[24px]">monitoring</span><span class="font-label-md text-label-md">Metrics</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="shirazi-byok-server-settings" href="#"><span class="material-symbols-outlined text-[24px]">tune</span><span class="font-label-md text-label-md">Config</span></a></div></nav></body></html>

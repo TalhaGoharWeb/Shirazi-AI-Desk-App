@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_admin" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Inter:wght@400;500;600;700&amp;family=Noto+Nastaliq+Urdu:wght@400;700&amp;family=Noto+Serif:ital,wght@0,400;0,500;0,600;1,400&amp;family=Scheherazade+New:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-secondary-fixed-variant": "#005236", "on-tertiary-container": "#534400", "outline-variant": "#4d4635", "surface-container": "#1c211e", "on-tertiary": "#3b2f00", "on-tertiary-fixed": "#231b00", "outline": "#99907c", "secondary": "#4edea3", "primary-fixed-dim": "#e9c349", "tertiary": "#e7cd78", "surface-bright": "#353a38", "on-error": "#690005", "background": "#0f1412", "surface-container-lowest": "#0a0f0d", "surface-dim": "#0f1412", "inverse-primary": "#735c00", "primary-container": "#d4af37", "on-background": "#dfe4e0", "secondary-container": "#00a572", "secondary-fixed": "#6ffbbe", "error-container": "#93000a", "on-tertiary-fixed-variant": "#554500", "tertiary-fixed": "#fbe189", "error": "#ffb4ab", "on-surface": "#dfe4e0", "tertiary-container": "#cab25f", "on-secondary-container": "#00311f", "surface-container-high": "#262b29", "secondary-fixed-dim": "#4edea3", "surface-container-highest": "#313633", "primary": "#f2ca50", "primary-fixed": "#ffe088", "surface-variant": "#313633", "on-secondary-fixed": "#002113", "surface-tint": "#e9c349", "on-surface-variant": "#d0c5af", "on-primary": "#3c2f00", "inverse-on-surface": "#2c322f", "on-primary-fixed": "#241a00", "on-secondary": "#003824", "tertiary-fixed-dim": "#dec571", "surface": "#0f1412", "on-primary-fixed-variant": "#574500", "on-error-container": "#ffdad6", "on-primary-container": "#554300", "inverse-surface": "#dfe4e0", "surface-container-low": "#181d1a" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-md": "1rem", "space-lg": "1.5rem", "gutter": "1.5rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "margin-mobile": "1rem", "margin": "2.5rem", "gutter-mobile": "0.75rem", "space-sm": "0.5rem" }, fontFamily: { "headline-lg": ["Noto Serif"], "headline-sm": ["Noto Serif"], "headline-md": ["Noto Serif"], "display-hero-mobile": ["Noto Serif"], "headline-lg-mobile": ["Noto Serif"], "label-sm": ["Inter"], "label-md": ["Inter"], "body-lg": ["Inter"], "body-scholarly-lg": ["Amiri", "Scheherazade New", "Noto Serif"], "display-hero": ["Noto Serif"], "body-md": ["Inter"], "body-sm": ["Inter"], "arabic": ["Amiri", "Scheherazade New", "serif"], "urdu": ["Noto Nastaliq Urdu", "serif"] }, fontSize: { "headline-lg": ["32px", { lineHeight: "42px", letterSpacing: "-0.015em", fontWeight: "500" }], "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "32px", fontWeight: "500" }], "display-hero-mobile": ["34px", { lineHeight: "44px", letterSpacing: "-0.01em", fontWeight: "600" }], "headline-lg-mobile": ["26px", { lineHeight: "34px", fontWeight: "500" }], "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "500" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }], "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }], "body-scholarly-lg": ["20px", { lineHeight: "36px", fontWeight: "400" }], "display-hero": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "600" }], "body-md": ["15px", { lineHeight: "24px", fontWeight: "400" }], "body-sm": ["13px", { lineHeight: "20px", fontWeight: "400" }] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100%; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style></head><body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_16px_rgba(0,0,0,0.55)]"><div class="h-16 px-gutter-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/30 flex items-center justify-center text-secondary shadow-[0_0_12px_rgba(78,222,163,0.15)]"><span class="material-symbols-outlined text-[20px]">admin_panel_settings</span></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Superuser</span><span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span></div><h1 class="font-headline-sm text-headline-sm text-on-surface leading-none tracking-tight">Admin Corpus Management</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="Sync Database" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-secondary transition-colors"><span class="material-symbols-outlined text-[22px]">sync</span></button><a aria-label="Exit Admin Mode" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" data-path="shirazi-research-desk" href="#"><span class="material-symbols-outlined text-[22px]">close</span></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full px-gutter-mobile space-y-space-md">
+<!-- Admin Ambient Status & Telemetry Bar -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low shadow-md p-space-md">
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-secondary tracking-wide uppercase">Real-Time Ingestion</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">84 Active Scholars</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="px-space-sm py-1 rounded-full bg-surface-container-highest text-primary font-label-sm text-label-sm">
+          Node EU-Central (Shirazi-v2.4)
+        </span>
+</div>
+</div>
+<!-- Micro Pulse Visualizer -->
+<div class="mt-space-md pt-space-xs flex items-end gap-1.5 h-6">
+<div class="flex-1 bg-secondary/30 rounded-t h-3"></div>
+<div class="flex-1 bg-secondary/60 rounded-t h-5 animate-pulse"></div>
+<div class="flex-1 bg-secondary/40 rounded-t h-4"></div>
+<div class="flex-1 bg-primary/70 rounded-t h-6"></div>
+<div class="flex-1 bg-secondary/50 rounded-t h-4"></div>
+<div class="flex-1 bg-secondary/20 rounded-t h-2"></div>
+<div class="flex-1 bg-secondary/80 rounded-t h-5"></div>
+<div class="flex-1 bg-secondary/40 rounded-t h-3"></div>
+<div class="flex-1 bg-primary/90 rounded-t h-6"></div>
+<div class="flex-1 bg-secondary/60 rounded-t h-4"></div>
+<div class="flex-1 bg-secondary/30 rounded-t h-3"></div>
+<div class="flex-1 bg-secondary/70 rounded-t h-5"></div>
+</div>
+</div>
+<!-- Search & Scholarly Filters -->
+<div class="flex flex-col space-y-space-sm">
+<!-- Filter Search Box -->
+<div class="flex items-center bg-surface-container rounded-xl px-space-md py-space-sm shadow-sm">
+<span class="material-symbols-outlined text-outline text-[20px] mr-space-sm">search</span>
+<input class="bg-transparent w-full text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none" id="audit-search" placeholder="Search prompt, scholar ID, or fatwa citation..." type="text"/>
+<button aria-label="Open Filter Drawer" class="text-on-surface-variant hover:text-primary transition-colors pl-space-xs">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+<!-- Madhhab Chips Horizontal Scroll -->
+<div class="flex items-center gap-space-xs overflow-x-auto pb-1 no-scrollbar text-nowrap">
+<button class="px-space-md py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm">
+        All Schools
+      </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md">
+        Hanafi (الحنفي)
+      </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md">
+        Shafi'i (الشافعي)
+      </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md">
+        Maliki (المالكي)
+      </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md">
+        Hanbali (الحنبلي)
+      </button>
+</div>
+<!-- Status Sub-filters -->
+<div class="flex items-center justify-between px-space-xs text-on-surface-variant">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Status:</span>
+<button class="px-2 py-0.5 rounded bg-surface-container-highest text-secondary font-label-sm text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          200 OK
+        </button>
+<button class="px-2 py-0.5 rounded bg-surface-container-low text-tertiary font-label-sm text-label-sm">
+          Failover
+        </button>
+<button class="px-2 py-0.5 rounded bg-surface-container-low text-outline font-label-sm text-label-sm">
+          Rate-Limit
+        </button>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Today, Shawwal 14</span>
+</div>
+</div>
+<!-- Inquiries Feed -->
+<div class="flex flex-col space-y-space-md" id="inquiries-container">
+<!-- Card 1: Classical Jurisprudence / Tawarruq -->
+<article class="rounded-xl bg-surface-container shadow-md overflow-hidden transition-all duration-300">
+<!-- Card Header Indicator -->
+<div class="h-1 bg-gradient-to-r from-primary to-secondary"></div>
+<div class="p-space-md space-y-space-sm">
+<!-- User Metadata Row -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface">Scholar #4029</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-primary-fixed-dim font-label-sm text-label-sm">Hanbali</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">Riyadh, SA • 3 mins ago</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/30 text-secondary font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">key</span>
+              BYOK Gemini
+            </span>
+</div>
+</div>
+<!-- Prompt Asked -->
+<div class="bg-surface-container-low rounded-lg p-space-sm space-y-1">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Inquiry Prompt</span>
+<span class="font-label-sm text-label-sm">Arabic (RTL)</span>
+</div>
+<p class="text-right font-body-scholarly-lg text-body-scholarly-lg text-on-surface leading-relaxed" dir="rtl">
+            "ما حكم بيع التورق المنظم في المصارف الإسلامية المعاصرة مع بيان ضابط القبض الشرعي؟"
+          </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant italic pt-1">
+            "What is the ruling on organized Tawarruq in contemporary Islamic banks with clarification of Qabd?"
+          </p>
+</div>
+<!-- Expandable Content Toggle -->
+<div class="pt-space-xs">
+<button class="w-full flex items-center justify-between py-1 text-primary font-label-md text-label-md hover:underline" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.toggle-icon').classList.toggle('rotate-180');">
+<span>Synthesized Fatwa &amp; Juristic Analysis</span>
+<span class="material-symbols-outlined toggle-icon text-[18px] transition-transform duration-200">expand_more</span>
+</button>
+<!-- Drawer Content -->
+<div class="mt-space-sm space-y-space-sm pt-space-xs">
+<!-- Scholarly Response Block -->
+<div class="p-space-sm rounded-lg bg-surface-container-lowest space-y-space-xs">
+<div class="flex items-center gap-1.5 text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>Synthesized Verdict (قرار المجمع)</span>
+</div>
+<p class="text-right font-body-scholarly-lg text-body-scholarly-lg text-on-surface leading-loose" dir="rtl">
+                التورق المنظم بصيغته المصرفية التي يتولى فيها المصرف توكيل العميل بالبيع وقبض الثمن نيابة عنه غير جائز شرعاً وفقاً لقرار مجمع الفقه الإسلامي الدولي رقم 179 (19/5)، لانتفاء القبض الحقيقي الصريح وتطرق شبهة بيع العينة والحيلة الربوية.
+              </p>
+<!-- Citations -->
+<div class="pt-space-xs flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-label-sm text-label-sm">
+                  قرار مجمع الفقه رقم 179
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+                  المغني لابن قدامة 4/156
+                </span>
+</div>
+</div>
+<!-- Agent Telemetry -->
+<div class="grid grid-cols-3 gap-space-xs text-center py-1">
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Latency</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">1.4s</span>
+</div>
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Compute</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">842 tok</span>
+</div>
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Engine</span>
+<span class="font-headline-sm text-headline-sm text-secondary">Gemini Pro</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2: Hadith Takhrij & Isnad Validation -->
+<article class="rounded-xl bg-surface-container shadow-md overflow-hidden transition-all duration-300">
+<div class="h-1 bg-gradient-to-r from-secondary to-tertiary"></div>
+<div class="p-space-md space-y-space-sm">
+<!-- User Metadata Row -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-secondary font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[20px]">school</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface">Student #1184</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-secondary font-label-sm text-label-sm">Maliki</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">Cairo, EG • 12 mins ago</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container/40 text-on-tertiary-container font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">alt_route</span>
+              Cluster Failover
+            </span>
+</div>
+</div>
+<!-- Prompt Asked -->
+<div class="bg-surface-container-low rounded-lg p-space-sm space-y-1">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Inquiry Prompt</span>
+<span class="font-label-sm text-label-sm">Hadith Sciences</span>
+</div>
+<p class="text-right font-body-scholarly-lg text-body-scholarly-lg text-on-surface leading-relaxed" dir="rtl">
+            "تخريج حديث: لا ضرر ولا ضرار، وبيان طرقه في الموطأ وسنن ابن ماجه وحكم أئمة الشأن عليه."
+          </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant italic pt-1">
+            "Takhrij of Hadith: 'No harm nor causing harm' across Muwatta Malik and Sunan Ibn Majah."
+          </p>
+</div>
+<!-- Expandable Content Toggle -->
+<div class="pt-space-xs">
+<button class="w-full flex items-center justify-between py-1 text-secondary font-label-md text-label-md hover:underline" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.toggle-icon').classList.toggle('rotate-180');">
+<span>Isnad Lineage &amp; Authentication Trace</span>
+<span class="material-symbols-outlined toggle-icon text-[18px] transition-transform duration-200">expand_more</span>
+</button>
+<!-- Drawer Content -->
+<div class="mt-space-sm space-y-space-sm pt-space-xs">
+<div class="p-space-sm rounded-lg bg-surface-container-lowest space-y-space-xs">
+<div class="flex items-center justify-between">
+<span class="text-secondary font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                  Hasan li-Ghayrihi (حسن لغيره)
+                </span>
+<span class="text-outline font-label-sm text-label-sm">3 Chains Converging</span>
+</div>
+<p class="text-right font-body-scholarly-lg text-body-scholarly-lg text-on-surface leading-loose" dir="rtl">
+                الحديث رواه مالك في الموطأ (مرسلاً عن عمرو بن يحيى المازني عن أبيه) ورواه ابن ماجه والدارقطني موصولاً من حديث ابن عباس وأبي سعيد الخدري، ويعضد بعضها بعضاً حتى ارتقى لدرجة الصحة أو الحسن المحتج به.
+              </p>
+<div class="pt-space-xs flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary-fixed-dim font-label-sm text-label-sm">
+                  موطأ مالك: كتاب الأقضية
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+                  سنن ابن ماجه: ح 2340
+                </span>
+</div>
+</div>
+<!-- Agent Telemetry -->
+<div class="grid grid-cols-3 gap-space-xs text-center py-1">
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Latency</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">2.1s</span>
+</div>
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Compute</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">1,210 tok</span>
+</div>
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Engine</span>
+<span class="font-headline-sm text-headline-sm text-tertiary">Shirazi Core</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3: Urdu Regional Fatwa (Crypto Trading & Zakat) -->
+<article class="rounded-xl bg-surface-container shadow-md overflow-hidden transition-all duration-300">
+<div class="h-1 bg-gradient-to-r from-tertiary to-primary"></div>
+<div class="p-space-md space-y-space-sm">
+<!-- User Metadata Row -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-tertiary font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[20px]">currency_bitcoin</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface">User #9821</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-tertiary font-label-sm text-label-sm">Hanafi</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">Karachi, PK • 28 mins ago</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary font-label-sm text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+              Resolved
+            </span>
+</div>
+</div>
+<!-- Prompt Asked (Urdu) -->
+<div class="bg-surface-container-low rounded-lg p-space-sm space-y-1">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Inquiry Prompt</span>
+<span class="font-label-sm text-label-sm">Urdu Nastaliq</span>
+</div>
+<p class="text-right font-urdu text-body-scholarly-lg text-on-surface leading-loose" dir="rtl">
+            "کرپٹو کرنسی میں ٹریڈنگ اور اس پر سالانہ زکوٰۃ کا شرعی حکم کیا ہے؟ مالیت کا تعین کیسے ہوگا؟"
+          </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant italic pt-1">
+            "What is the Shariah ruling on cryptocurrency trading and calculating annual Zakat on it?"
+          </p>
+</div>
+<!-- Expandable Content Toggle -->
+<div class="pt-space-xs">
+<button class="w-full flex items-center justify-between py-1 text-tertiary font-label-md text-label-md hover:underline" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.toggle-icon').classList.toggle('rotate-180');">
+<span>Contemporary Fatawa Synthesis (Mufti Taqi Usmani)</span>
+<span class="material-symbols-outlined toggle-icon text-[18px] transition-transform duration-200">expand_more</span>
+</button>
+<!-- Drawer Content -->
+<div class="mt-space-sm space-y-space-sm pt-space-xs">
+<div class="p-space-sm rounded-lg bg-surface-container-lowest space-y-space-xs">
+<div class="flex items-center justify-between text-secondary font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+                  Fiqh Council Verdict
+                </span>
+<span class="text-outline">Maliyyah &amp; Taqawwum</span>
+</div>
+<p class="text-right font-urdu text-body-scholarly-lg text-on-surface leading-loose" dir="rtl">
+                مفتی تقی عثمانی اور متعدد معاصر فقہاء کے نزدیک کرپٹو کرنسی میں محض نفع اندوزی کی غرض سے کی جانے والی فیوچر اور قیاس آرائی پر مبنی ٹریڈنگ قمار اور غرر کے سبب جائز نہیں۔ تاہم اگر کسی شخص کی ملکیت میں ہو تو زکوٰۃ کی ادائیگی کے لیے اس کی مارکیٹ ویلیو پر 2.5 فیصد ادا کرنا لازم ہوگا۔
+              </p>
+<div class="pt-space-xs flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary-fixed font-label-sm text-label-sm">
+                  فتاویٰ عثمانی ج 3
+                </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+                  معیار ایوفی رقم 57
+                </span>
+</div>
+</div>
+<!-- Agent Telemetry -->
+<div class="grid grid-cols-3 gap-space-xs text-center py-1">
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Latency</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">1.8s</span>
+</div>
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Compute</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">630 tok</span>
+</div>
+<div class="p-1 rounded bg-surface-container-high">
+<span class="block font-label-sm text-label-sm text-outline">Engine</span>
+<span class="font-headline-sm text-headline-sm text-primary">Shirazi Ur-Core</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</article>
+</div>
+<!-- Sticky Admin Action Bar -->
+<div class="pt-space-sm pb-space-lg flex items-center justify-between gap-space-sm">
+<button class="flex-1 flex items-center justify-center gap-space-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-3 px-space-md rounded-xl font-label-md text-label-md transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Export Audit Log (JSON)</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-space-xs bg-primary hover:bg-primary-fixed-dim text-on-primary py-3 px-space-md rounded-xl font-label-md text-label-md transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px]">stream</span>
+<span>Live Stream View</span>
+</button>
+</div>
+</div>
+<script>
+  // Simple filter input interaction
+  document.getElementById('audit-search')?.addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('#inquiries-container article');
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      if(text.includes(term)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.6)]" data-active-classes="text-secondary"><div class="h-20 px-gutter-mobile flex justify-around items-center"><a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] transition-colors text-secondary" data-path="admin-corpus-management" href="#"><span class="material-symbols-outlined text-[24px]">database</span><span class="font-label-md text-label-md">Corpus</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="admin-isnad-verification" href="#"><span class="material-symbols-outlined text-[24px]">verified</span><span class="font-label-md text-label-md">Verification</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="admin-system-metrics" href="#"><span class="material-symbols-outlined text-[24px]">monitoring</span><span class="font-label-md text-label-md">Metrics</span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="shirazi-byok-server-settings" href="#"><span class="material-symbols-outlined text-[24px]">tune</span><span class="font-label-md text-label-md">Config</span></a></div></nav></body></html>

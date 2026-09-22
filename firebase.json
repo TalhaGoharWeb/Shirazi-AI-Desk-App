@@ -1,0 +1,26 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "shirazi-ai",
+          "appId": "1:302847199432:android:b17d48947520a6fb6f3dfd",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "shirazi-ai",
+          "configurations": {
+            "android": "1:302847199432:android:b17d48947520a6fb6f3dfd",
+            "web": "1:302847199432:web:7db8e4d8b6e838d46f3dfd"
+          }
+        }
+      }
+    }
+  }
+}
