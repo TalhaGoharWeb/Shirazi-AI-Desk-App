@@ -134,7 +134,7 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Stored encrypted on this device. Only ever sent to your Shirazi Oracle server, which runs its full research pipeline with it \u2014 never used for direct AI answers.',
+                        'Stored in your device\u2019s secure storage (Android Keystore / iOS Keychain). Only ever sent to your Shirazi Oracle server over HTTPS, where it runs the full Shirazi research pipeline with it \u2014 never used for direct AI answers.',
                         style: ShiraziTypography.bodySm(color: ShiraziColors.onSurfaceVariant),
                       ),
                     ),
@@ -314,6 +314,11 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
           ),
           const SizedBox(height: ShiraziSpacing.spaceMd),
 
+          // 2b. Connection Security (§1, §5)
+          _buildSecuritySection(context, settings),
+
+          const SizedBox(height: ShiraziSpacing.spaceMd),
+
           // 3. Choose AI Service Provider
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -477,7 +482,7 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                         const Icon(Icons.lock, size: 12, color: ShiraziColors.secondary),
                         const SizedBox(width: 6),
                         Text(
-                          'Encrypted: ${settings.getMaskedKey(settings.selectedProvider)}',
+                          'Secured: ${settings.getMaskedKey(settings.selectedProvider)}',
                           style: ShiraziTypography.dynamicLabel(
                             'en',
                             fontSize: 11,
@@ -594,7 +599,7 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                           settings.saveCurrentKey(clean);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('API Key securely saved and encrypted locally'),
+                              content: Text('API Key saved to secure device storage'),
                               duration: Duration(seconds: 2),
                             ),
                           );
@@ -1085,6 +1090,85 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
     }
 
     return body;
+  }
+
+  /// Connection security status (§1, §5).
+  ///
+  /// Shows whether the Oracle transport is HTTPS/WSS. User API keys are
+  /// NEVER transmitted over plain HTTP unless the development-only override
+  /// below is explicitly enabled.
+  Widget _buildSecuritySection(BuildContext context, dynamic settings) {
+    final bool secure = settings.isSecureTransport as bool;
+    final String label = settings.oracleServerLabel as String;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: ShiraziColors.surfaceContainer,
+        borderRadius: ShiraziRadius.roundedMd,
+        border: Border.all(
+          color: (secure ? ShiraziColors.secondary : ShiraziColors.error)
+              .withOpacity(0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                secure ? Icons.lock : Icons.warning_amber_rounded,
+                size: 18,
+                color: secure ? ShiraziColors.secondary : ShiraziColors.error,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  secure
+                      ? 'Secure connection (HTTPS/WSS)'
+                      : 'Insecure connection (HTTP)',
+                  style: ShiraziTypography.labelMd(
+                    color: ShiraziColors.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: ShiraziTypography.bodySm(color: ShiraziColors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            secure
+                ? 'Questions and API keys travel over encrypted TLS.'
+                : 'Your Oracle server does not use TLS yet. API keys are BLOCKED from being sent until you switch to HTTPS or enable the development override below.',
+            style: ShiraziTypography.bodySm(color: ShiraziColors.onSurfaceVariant),
+          ),
+          if (!secure) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Switch(
+                  value: settings.allowInsecureHttp as bool,
+                  onChanged: (v) => settings.setAllowInsecureHttp(v),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Allow key transmission over HTTP (development only — never enable with real keys on untrusted networks)',
+                    style: ShiraziTypography.bodySm(
+                      color: ShiraziColors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Widget _buildProviderCard({

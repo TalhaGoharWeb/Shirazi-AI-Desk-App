@@ -33,6 +33,19 @@ class SettingsProvider with ChangeNotifier {
 
   bool isProviderEnabled(String provider) => storageService.isProviderEnabled(provider);
 
+  /// §1: true when the Oracle endpoint uses HTTPS (production requirement).
+  bool get isSecureTransport => apiService.isSecureTransport;
+
+  /// Log-safe Oracle endpoint label (no credentials).
+  String get oracleServerLabel => apiService.redactedEndpoint;
+
+  /// Development-only override: allow user keys over plain HTTP. Default false.
+  bool get allowInsecureHttp => storageService.allowInsecureHttp;
+  void setAllowInsecureHttp(bool value) {
+    storageService.allowInsecureHttp = value;
+    notifyListeners();
+  }
+
   void toggleProviderEnabled(String provider, bool enabled) {
     storageService.setProviderEnabled(provider, enabled);
     notifyListeners();

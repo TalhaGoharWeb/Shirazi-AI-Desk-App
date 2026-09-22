@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../models/inquiry.dart';
 import '../models/provider_health.dart';
 import 'fiqh_query_analyzer.dart';
+import 'oracle_protocol.dart' as proto;
 
 class KeyValidationResult {
   final bool isValid;
@@ -22,7 +23,30 @@ class KeyValidationResult {
 class ApiService {
   final String baseUrl;
 
-  ApiService({this.baseUrl = 'http://129.154.242.136:4040'});
+  /// Parsed endpoint with transport-security helpers.
+  late final proto.OracleEndpoint endpoint;
+
+  /// Provides a Firebase ID token for Oracle authentication (socket auth +
+  /// future HTTP Authorization header). May be null when signed out.
+  final Future<String?> Function()? authTokenProvider;
+
+  /// When true, user keys may be transmitted over plain HTTP. Default false.
+  /// This is a development-only override; production must use HTTPS.
+  final bool allowInsecureHttp;
+
+  ApiService({
+    this.baseUrl = 'http://129.154.242.136:4040',
+    this.authTokenProvider,
+    this.allowInsecureHttp = false,
+  }) {
+    endpoint = proto.OracleEndpoint.parse(baseUrl);
+  }
+
+  /// True when the configured Oracle uses HTTPS (production requirement).
+  bool get isSecureTransport => endpoint.isSecure;
+
+  /// Log-safe endpoint label — never contains credentials.
+  String get redactedEndpoint => endpoint.redacted;
 
   /// Strips extraneous quotes, trailing spaces, newlines, and Bearer prefix
   static String sanitizeApiKey(String key) {
@@ -138,11 +162,9 @@ class ApiService {
     IO.Socket? socket;
     Timer? timeoutTimer;
 
-    // Client-generated correlation ID for this Oracle request (§5).
-    // The server does not issue request IDs, so we tag our own side of the
-    // exchange and never fabricate server-side metadata.
-    final requestId =
-        'req_${DateTime.now().millisecondsSinceEpoch}_${(DateTime.now().microsecond % 900000) + 100000}';
+    // Client-generated UUID v4 for end-to-end tracing (§9):
+    // app -> Oracle API -> research pipeline -> AI provider -> response -> app.
+    final requestId = proto.generateRequestId();
     final socketStopwatch = Stopwatch()..start();
 
     // Tracks whether the question was actually delivered to the Oracle over
@@ -151,31 +173,69 @@ class ApiService {
 
     final userKeysPayload = <String, String>{};
     if (byokProvider != null && byokKey != null && byokKey.trim().isNotEmpty) {
-      userKeysPayload[byokProvider.toLowerCase()] = byokKey.trim();
+      final p = byokProvider.trim().toLowerCase();
+      if (proto.isSupportedByokProvider(p)) {
+        userKeysPayload[p] = byokKey.trim();
+      } else {
+        debugPrint('[ApiService] Rejected non-allowlisted BYOK provider: $p');
+      }
     }
     if (fallbackKeys != null) {
       fallbackKeys.forEach((k, v) {
-        if (v.trim().isNotEmpty) {
-          userKeysPayload[k.toLowerCase()] = v.trim();
+        final p = k.trim().toLowerCase();
+        if (v.trim().isNotEmpty && proto.isSupportedByokProvider(p)) {
+          userKeysPayload[p] = v.trim();
         }
       });
     }
 
+    // ── HTTPS enforcement (§1, §5) ──────────────────────────────────────
+    // User API keys must NEVER travel over plain HTTP. If the Oracle endpoint
+    // is not HTTPS and the development override is off, we refuse to transmit
+    // the keys at all and return an honest, localized blocked state.
+    if (userKeysPayload.isNotEmpty &&
+        !endpoint.isSecure &&
+        !allowInsecureHttp) {
+      debugPrint(
+          '[ApiService] BLOCKED: refusing to transmit user keys over insecure transport '
+          '(${endpoint.redacted}). Enable HTTPS on the Oracle server.');
+      return _oracleErrorResult(
+        requestId: requestId,
+        transport: 'none',
+        message: proto.getInsecureTransportBlockedMessage(lang),
+        failure: proto.OracleFailure.insecureTransportBlocked,
+      );
+    }
+    if (!endpoint.isSecure) {
+      debugPrint(
+          '[ApiService] WARNING: Oracle transport is insecure HTTP '
+          '(${endpoint.redacted}). Questions are not TLS-protected.');
+    }
+
     try {
-      socket = IO.io(baseUrl, IO.OptionBuilder()
+      // Socket.IO authentication (§11): attach the Firebase ID token when
+      // signed in. The server must verify it and derive user identity from
+      // it — never trust client-provided userId/role fields.
+      final idToken = await authTokenProvider?.call();
+      final builder = IO.OptionBuilder()
           .setTransports(['websocket', 'polling'])
           .enableForceNew()
-          .setTimeout(10000)
-          .build());
+          .setTimeout(10000);
+      if (idToken != null && idToken.isNotEmpty) {
+        builder.setAuth({'token': idToken});
+      }
+      socket = IO.io(endpoint.baseUrl, builder.build());
 
       socket.onConnect((_) {
         socket!.emit('chat', {
+          'request_id': requestId,
           'text': text,
           'persona': persona,
           'lang': lang,
           'madhhab': madhhab,
           'user_keys': userKeysPayload,
-          'provider_priority': providerPriority,
+          'provider_priority':
+              proto.priorityListFor(userKeysPayload, providerPriority, byokProvider),
           'channel': 'mobile_app',
         });
         socketDelivered = true;
@@ -193,56 +253,9 @@ class ApiService {
         }
       });
 
-      bool isLimitOrOutage(dynamic data, String answer) {
-        if (data is Map) {
-          if (data['ok'] == false || data['status'] == 'ERROR' || data['error'] != null) {
-            return true;
-          }
-        }
-        final a = answer.trim();
-        final lower = a.toLowerCase();
-
-        // 1. Explicit limit, busy, & outage indicators across Urdu, Arabic, and English
-        if (a.contains('دستیاب نہیں') ||
-            a.contains('عارضی طور پر') ||
-            a.contains('مصروف') ||
-            a.contains('تمام دستیاب') ||
-            a.contains('دوبارہ کوشش') ||
-            a.contains('عطل مؤقت') ||
-            a.contains('غير متاحة') ||
-            a.contains('مشغولة') ||
-            a.contains('مشغول') ||
-            a.contains('الحد المسموح') ||
-            a.contains('تم الوصول للحد') ||
-            a.contains('تجاوزت الحد') ||
-            a.contains('الرصيد') ||
-            a.contains('تعذر استلام الرد') ||
-            a.contains('إعادة المحاولة') ||
-            lower.contains('rate limit') ||
-            lower.contains('quota exceeded') ||
-            lower.contains('limit reached') ||
-            lower.contains('too many requests') ||
-            lower.contains('free tier exhausted') ||
-            lower.contains('busy') ||
-            lower.contains('unavailable') ||
-            lower.contains('try again later')) {
-          return true;
-        }
-
-        // 2. Short non-scholarly answers (< 220 chars) that indicate failure or server trouble
-        if (a.length < 220 &&
-            (a.contains('عطل') ||
-             a.contains('خطأ') ||
-             a.contains('خادم') ||
-             a.contains('سرور') ||
-             a.contains('server') ||
-             a.contains('error') ||
-             a.contains('failed'))) {
-          return true;
-        }
-
-        return false;
-      }
+      // Pure, unit-tested outage detector (oracle_protocol).
+      bool isLimitOrOutage(dynamic data, String answer) =>
+          proto.isLimitOrOutage(data is Map ? data : null, answer);
 
       socket.on('assistant-message', (data) {
         if (!completer.isCompleted) {
@@ -262,8 +275,16 @@ class ApiService {
           final isMadhhabMismatch = madhhab != null && madhhab.isNotEmpty
               ? MadhhabDetector.isMismatched(answer, madhhab)
               : false;
+          // §9: if the server echoes a request ID, it must match ours —
+          // otherwise this response does not belong to our request.
+          final requestIdOk = data is Map
+              ? proto.requestIdMatches(data, requestId)
+              : true;
 
-          if (answer.isNotEmpty && !isOutage && !isMadhhabMismatch) {
+          if (answer.isNotEmpty &&
+              !isOutage &&
+              !isMadhhabMismatch &&
+              requestIdOk) {
             completer.complete({
               'status': 'SUCCESS',
               // ── Server identity / provenance (§5) ──────────────────────
@@ -387,12 +408,14 @@ class ApiService {
           Uri.parse('$baseUrl/api/chat'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
+            'request_id': requestId,
             'text': text,
             'persona': persona,
             'lang': lang,
             'madhhab': madhhab,
             'user_keys': userKeysPayload,
-            'provider_priority': priorityListFor(userKeysPayload, providerPriority, byokProvider),
+            'provider_priority':
+                proto.priorityListFor(userKeysPayload, providerPriority, byokProvider),
             'channel': 'mobile_app',
           }),
         ).timeout(const Duration(seconds: 90));
@@ -494,24 +517,13 @@ class ApiService {
   }
 
   /// Builds the ordered provider-priority list for a server-side BYOK request.
+  /// Delegates to the pure, unit-tested implementation in oracle_protocol.
   static List<String> priorityListFor(
     Map<String, String> userKeysPayload,
     List<String>? providerPriority,
     String? byokProvider,
-  ) {
-    final priorityList = <String>[];
-    if (providerPriority != null && providerPriority.isNotEmpty) {
-      priorityList.addAll(providerPriority);
-    } else if (byokProvider != null && byokProvider.isNotEmpty) {
-      priorityList.add(byokProvider);
-    }
-    for (final k in userKeysPayload.keys) {
-      if (!priorityList.contains(k)) {
-        priorityList.add(k);
-      }
-    }
-    return priorityList;
-  }
+  ) =>
+      proto.priorityListFor(userKeysPayload, providerPriority, byokProvider);
 
   /// Structured quota-exhaustion result. The Oracle ran but its inference
   /// capacity is spent. No answer is fabricated; the UI offers an explicit,
@@ -543,6 +555,7 @@ class ApiService {
     required String requestId,
     required String transport,
     required String message,
+    proto.OracleFailure? failure,
   }) {
     return {
       'status': 'EXHAUSTED',
@@ -550,6 +563,7 @@ class ApiService {
       'request_id': requestId,
       'transport': transport,
       'oracle_url': baseUrl,
+      'failure': failure?.name,
       'answered_at': DateTime.now().toUtc().toIso8601String(),
       'error': message,
       'answer': message,
@@ -564,55 +578,16 @@ class ApiService {
   /// Localized notice for Oracle inference-quota exhaustion.
   /// [oracleKeysUsed] tells whether the user's personal key was already routed
   /// through the Shirazi pipeline for this question.
-  static String getQuotaExhaustedMessage(String lang, bool oracleKeysUsed) {
-    switch (lang) {
-      case 'ur':
-        return oracleKeysUsed
-            ? 'شیرازی تحقیقی سرور کی موجودہ استعدادی گنجائش ختم ہو چکی ہے — آپ کی ذاتی API Key شیرازی تحقیقی پائپ لائن کے ذریعے پہلے ہی استعمال ہو چکی ہے۔\n\n'
-                'کوئی متبادل AI جواب نہیں دیا گیا۔ آپ کا سوال محفوظ ہے؛ کچھ دیر بعد "دوبارہ کوشش" دبائیں۔'
-            : 'شیرازی تحقیقی سرور کی موجودہ استعدادی گنجائش ختم ہو چکی ہے۔\n\n'
-                'کوئی متبادل AI جواب نہیں دیا گیا۔ آپ ترتیبات میں اپنی ذاتی API Key شامل کر سکتے ہیں — وہ صرف شیرازی تحقیقی پائپ لائن کے ذریعے استعمال ہوگی، براہِ راست جواب کے لیے کبھی نہیں۔';
-      case 'ar':
-        return oracleKeysUsed
-            ? 'بلغت السعة الاستدلالية لخادم الشيرازي البحثي حدها — وقد تم بالفعل استخدام مفتاح API الشخصي الخاص بك عبر خط أنابيب الشيرازي البحثي.\n\n'
-                'لم يتم توليد أي إجابة بديلة. سؤالك محفوظ؛ اضغط "إعادة المحاولة" بعد قليل.'
-            : 'بلغت السعة الاستدلالية لخادم الشيرازي البحثي حدها الحالي.\n\n'
-                'لم يتم توليد أي إجابة بديلة. يمكنك إضافة مفتاح API شخصي في الإعدادات — سيُستخدم عبر خط أنابيب الشيرازي البحثي فقط، وليس للإجابة المباشرة أبداً.';
-      default:
-        return oracleKeysUsed
-            ? 'The Shirazi Research Server has reached its current inference capacity — your personal API key was already routed through the Shirazi research pipeline for this question.\n\n'
-                'No substitute AI answer has been generated. Your question is preserved; tap "Retry Query" shortly.'
-            : 'The Shirazi Research Server has reached its current inference capacity.\n\n'
-                'No substitute AI answer has been generated. You may add a personal API key in Settings — it will only ever be used through the Shirazi research pipeline, never for direct answers.';
-    }
-  }
+  static String getQuotaExhaustedMessage(String lang, bool oracleKeysUsed) =>
+      proto.getQuotaExhaustedMessage(lang, oracleKeysUsed);
 
   /// Localized notice for Oracle authentication rejection.
-  static String _getAuthErrorMessage(String lang) {
-    switch (lang) {
-      case 'ur':
-        return 'شیرازی سرور نے درخواست کی توثیق مسترد کر دی ہے۔\n\nکوئی جواب تیار نہیں کیا گیا۔ براہِ کرم دوبارہ سائن ان کریں یا کچھ دیر بعد دوبارہ کوشش کریں۔';
-      case 'ar':
-        return 'رفض خادم الشيرازي مصادقة هذا الطلب.\n\nلم يتم إنشاء أي إجابة. يرجى تسجيل الدخول مرة أخرى أو إعادة المحاولة لاحقاً.';
-      default:
-        return 'The Shirazi server rejected this request\u2019s authentication.\n\nNo answer has been generated. Please sign in again or retry shortly.';
-    }
-  }
+  static String _getAuthErrorMessage(String lang) =>
+      proto.getAuthErrorMessage(lang);
 
   /// Localized exhaustion error notice preserving question for 1-tap retry
-  static String getExhaustionMessage(String lang) {
-    switch (lang) {
-      case 'ur':
-        return 'اس وقت شیرازی تحقیقی سرور اور تمام دستیاب فال بیک ذرائع عارضی طور پر مصروف یا دستیاب نہیں ہیں۔\n\n'
-            'آپ کا سوال محفوظ کر لیا گیا ہے۔ آپ کچھ دیر بعد نیچے دیا گیا "دوبارہ کوشش" کا بٹن دبا سکتے ہیں یا ترتیبات میں اپنی ذاتی API Key شامل فرما سکتے ہیں۔';
-      case 'ar':
-        return 'تعذر معالجة الطلب حالياً نظراً لاكتمال سعة شبكة الشيرازي البحثية ومزودات الذكاء الاصطناعي الاحتياطية.\n\n'
-            'تم حفظ سؤالك. يمكنك الضغط على "إعادة المحاولة" بعد قليل أو إضافة مفتاح API شخصي في الإعدادات.';
-      default:
-        return 'The Shirazi research network and configured fallback providers are currently at capacity or temporarily unavailable.\n\n'
-            'Your question has been preserved. You can tap "Retry Query" or configure a personal API key in Settings.';
-    }
-  }
+  static String getExhaustionMessage(String lang) =>
+      proto.getExhaustionMessage(lang);
 
   /// Searches the server's live fatwa queue using topic entity matching and strict madhhab filtering.
   /// Uses RelevanceGuard.entityMatch() and MadhhabDetector to ensure that questions
@@ -772,7 +747,15 @@ class ApiService {
 
 
 
-  /// Tests a personal BYOK key directly against provider API with granular diagnostics
+  /// Tests a personal BYOK key against the provider's key-check endpoint.
+  ///
+  /// VALIDATION ONLY — never answer generation. This calls the provider's
+  /// lightweight key-verification endpoints (`/models`, `/auth/key`) over
+  /// HTTPS; the user's question is never sent here and no AI answer is ever
+  /// produced from this path. All research answers come exclusively from the
+  /// Shirazi Oracle (see [streamRealtimeQuery]). Key material is never
+  /// logged: errors are reported without exception details that could echo
+  /// credentials.
   Future<KeyValidationResult> testPersonalKeyDetailed({
     required String provider,
     required String apiKey,
@@ -786,13 +769,24 @@ class ApiService {
     }
 
     final p = provider.toLowerCase().trim();
+    if (!proto.isSupportedByokProvider(p)) {
+      return const KeyValidationResult(
+        isValid: false,
+        message: 'Unsupported Provider',
+      );
+    }
 
     try {
       if (p == 'gemini') {
+        // Key sent as a header (x-goog-api-key), never as a URL query
+        // parameter, so it cannot leak into proxy/access logs.
         final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models?key=$cleanKey',
+          'https://generativelanguage.googleapis.com/v1beta/models',
         );
-        final res = await http.get(url).timeout(const Duration(seconds: 8));
+        final res = await http.get(
+          url,
+          headers: {'x-goog-api-key': cleanKey},
+        ).timeout(const Duration(seconds: 8));
 
         if (res.statusCode == 200) {
           return const KeyValidationResult(
@@ -895,8 +889,9 @@ class ApiService {
           );
         }
       }
-    } catch (e) {
-      debugPrint('Error testing personal key: $e');
+    } catch (_) {
+      // Deliberately no exception details: they could echo key material.
+      debugPrint('[ApiService] Personal key verification failed (network/timeout).');
       return const KeyValidationResult(
         isValid: false,
         message: 'Network Error / Timeout',

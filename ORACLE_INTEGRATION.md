@@ -108,3 +108,72 @@ assumptions. Anything not observed is marked as such.
   references to removed direct-provider code.
 - Not yet run: `flutter analyze` / `flutter test` (no Flutter toolchain in the
   audit sandbox); release build; Firebase emulator tests.
+
+## Production hardening (2026-09-22, branch `oracle-production-hardening`)
+
+### Transport security (§1, §5)
+- `lib/services/oracle_protocol.dart` (new, pure Dart, zero Flutter imports):
+  `OracleEndpoint` parsing/validation, `isSecure`, `socketScheme` (wss/ws),
+  log-safe `redacted` form, `SUPPORTED_BYOK_PROVIDERS` allowlist, HTTP →
+  `OracleFailure` taxonomy, UUID v4 `generateRequestId()`, `hasOracleProvenance()`
+  gate, `requestIdMatches()`, allowlist-filtered `priorityListFor()`, plus all
+  localized failure messages.
+- `ApiService` now REFUSES to transmit user API keys over plain HTTP unless the
+  development-only `allowInsecureHttp` override is on (default off). Questions
+  without keys still work over HTTP with a warning.
+- Socket.IO: Firebase ID token attached via `setAuth({'token': idToken})` on
+  connect (§11); `request_id` (UUID v4) sent in the `chat` payload and POST body;
+  echoed request IDs are validated (§9).
+- Settings shows a live transport banner: "Secure connection (HTTPS/WSS)" vs
+  "Insecure connection (HTTP)" with the insecure-HTTP toggle (§1).
+- Live verification 2026-09-22: the Oracle still has NO TLS (plain HTTP only,
+  port 4040). HTTPS deployment requires server access — see docs/DEPLOYMENT.md.
+
+### BYOK key storage (§7) — honest security model
+- The old device-bound XOR `enc_` cipher was obfuscation, not encryption. It is
+  gone for new writes.
+- Keys now live in `flutter_secure_storage` (Android Keystore / iOS Keychain,
+  `encryptedSharedPreferences` on Android), cached in memory after
+  `loadSecureKeys()`. Legacy prefs values migrate once, then are deleted.
+- UI copy corrected: "secure device storage", never "encrypted" as a
+  cryptographic claim beyond what the platform provides.
+- In transit: HTTPS only (enforced). Never logged, never in Firestore, never in
+  analytics/crash reports. Key validation uses header-based auth
+  (`x-goog-api-key`), never URL query params; errors never print exceptions.
+
+### Provenance & request tracing (§9, §10)
+- Every request carries a UUID v4 `request_id` through socket + HTTP fallback.
+- `hasOracleProvenance()`: a `SUCCESS` result without `source == 'shirazi-oracle'`
+  is refused. Server-issued IDs/signatures still require Oracle changes.
+
+### Firestore authorization (§2, §3, §12, §13)
+- `firestore.rules` rewritten: roles ONLY from custom claims
+  (`request.auth.token.role` / `.admin` / `.superAdmin`). The old rules trusted
+  `users/{uid}.role`, which users could write themselves — fixed.
+- Profile writes whitelisted to non-privileged fields; `role`/`isAdmin`/etc.
+  rejected on every client write. Conversations/messages/inquiries enforce
+  `ownerUid == request.auth.uid`. Default-deny everything else.
+- `tools/set_super_admin_claim.mjs`: Admin-SDK script assigning the
+  `super_admin` claim to `muhaqqiqcreates@gmail.com` (verifies the account
+  exists; never creates users; never commits credentials).
+- Client `checkIsAdmin()`/`isSuperAdmin` now read custom claims only (plus a
+  verified-email bootstrap for the designated super-admin); the Firestore role
+  lookup and substring email matching are removed.
+
+### Failure-matrix tests (§19) — ACTUALLY RUN
+- `test/oracle_protocol_test.dart`: 46 tests, all passing, executed with the
+  standalone Dart SDK 3.13.4 (`dart test`) on 2026-09-22. `dart analyze` clean.
+- Covers: full HTTP status taxonomy, quota/outage detection (ur/ar/en,
+  including the exact live-server Urdu message), provenance gate, request-ID
+  matching, BYOK allowlist (rejects arbitrary URLs), endpoint parsing/redaction,
+  UUID v4 shape, message honesty.
+
+### Bitcoin re-test (§18) — 2026-09-22
+- Re-ran the exact question. Pipeline progress events observed (~44s), then the
+  same quota-exhaustion notice. No genuine answer — Oracle upstream capacity
+  still exhausted. §18 success criteria remain blocked on the server side.
+
+### Still requires server access (not done, documented in docs/DEPLOYMENT.md)
+HTTPS/WSS on the host, token verification + per-user socket rooms, server-issued
+request/response IDs, `SUPPORTED_PROVIDERS` enforcement, encrypted server-side
+BYOK handling, rate limits, honest progress states, quota→BYOK→notice flow.
