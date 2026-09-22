@@ -424,7 +424,9 @@ class ApiService {
           final data = jsonDecode(httpRes.body) as Map<String, dynamic>;
           if (data['status'] == 'SUCCESS' && data['answer'] != null) {
             final answer = data['answer'].toString();
-            if (answer.isNotEmpty && !isLimitOrOutage(data, answer)) {
+            // NOTE: the socket-scope `isLimitOrOutage` local is out of scope
+            // here — call the pure protocol detector directly (§6).
+            if (answer.isNotEmpty && !proto.isLimitOrOutage(data, answer)) {
               return {
                 'status': 'SUCCESS',
                 'source': 'shirazi-oracle',
