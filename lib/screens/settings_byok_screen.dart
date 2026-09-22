@@ -593,14 +593,19 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
                           final clean = SettingsProvider.sanitizeApiKey(_keyController.text);
                           _keyController.text = clean;
-                          settings.saveCurrentKey(clean);
+                          // Honest save: only announce success when the key
+                          // actually landed in secure device storage.
+                          final ok = await settings.saveCurrentKey(clean);
+                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('API Key saved to secure device storage'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(ok
+                                  ? 'API Key saved to secure device storage'
+                                  : 'Save failed: ${settings.testStatus}'),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         },

@@ -122,15 +122,27 @@ class StorageService {
         if (legacyCipher.isNotEmpty) {
           final migrated = _decryptLegacyKey(legacyCipher);
           if (migrated.isNotEmpty) {
-            value = migrated;
+            // Delete the legacy pref ONLY after a confirmed secure write.
+            // Otherwise a failed migration would destroy the only copy.
+            var writeOk = false;
             try {
-              await _secureStorage.write(key: _secureKeyName(p), value: value);
+              await _secureStorage.write(key: _secureKeyName(p), value: migrated);
+              writeOk = true;
             } catch (e) {
               debugPrint('[StorageService] Secure storage write failed for $p: $e');
             }
+            if (writeOk) {
+              value = migrated;
+              await _prefs.remove(legacyKey);
+              debugPrint('[StorageService] Migrated legacy BYOK key for $p into secure storage.');
+            } else {
+              // Keep the legacy value alive as a last resort so the user's
+              // key is not destroyed; it will be retried on next startup.
+              debugPrint('[StorageService] Migration deferred for $p: secure write failed, legacy value kept.');
+            }
+          } else {
+            await _prefs.remove(legacyKey);
           }
-          await _prefs.remove(legacyKey);
-          debugPrint('[StorageService] Migrated legacy BYOK key for $p into secure storage.');
         }
       }
       _keyCache[p] = value;
@@ -140,10 +152,25 @@ class StorageService {
 
   /// Writes a BYOK key through to platform secure storage and the cache.
   /// An empty value deletes the key.
+  ///
+  /// The in-memory cache is updated ONLY after the secure write succeeds, so
+  /// the app never claims a key is saved when it actually was not. On
+  /// failure the previous cache value is kept and the error is recorded in
+  /// [lastKeyWriteError]; prefer [saveKey] when the caller needs the result.
   Future<void> _writeSecureKey(String provider, String value) async {
+    await saveKey(provider, value);
+  }
+
+  /// Last secure-storage write failure, human-readable; `null` when the most
+  /// recent write succeeded (or no write has happened yet).
+  String? lastKeyWriteError;
+
+  /// Saves [value] for [provider] in secure storage. Returns `true` only when
+  /// the write actually landed in platform secure storage. Updates the
+  /// memory cache on success and records [lastKeyWriteError] on failure.
+  Future<bool> saveKey(String provider, String value) async {
     final p = provider.toLowerCase().trim();
     final clean = value.trim();
-    _keyCache[p] = clean;
     try {
       if (clean.isEmpty) {
         await _secureStorage.delete(key: _secureKeyName(p));
@@ -151,8 +178,13 @@ class StorageService {
         await _secureStorage.write(key: _secureKeyName(p), value: clean);
       }
     } catch (e) {
-      debugPrint('[StorageService] Secure storage write failed for $p: $e');
+      lastKeyWriteError = 'Secure device storage write failed for $p: $e';
+      debugPrint('[StorageService] $lastKeyWriteError');
+      return false;
     }
+    lastKeyWriteError = null;
+    _keyCache[p] = clean;
+    return true;
   }
 
   /// Reads the old XOR `enc_` obfuscation (or plaintext) for one-time

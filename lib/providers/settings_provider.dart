@@ -79,25 +79,31 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void saveCurrentKey(String key) {
-    saveKeyForProvider(selectedProvider, key);
+  Future<bool> saveCurrentKey(String key) {
+    return saveKeyForProvider(selectedProvider, key);
   }
 
-  void saveKeyForProvider(String provider, String key) {
+  /// Saves [key] for [provider] into secure device storage.
+  /// Returns `true` only when the write actually landed in platform secure
+  /// storage — the UI must show the returned result, not an assumed success.
+  Future<bool> saveKeyForProvider(String provider, String key) async {
     final clean = sanitizeApiKey(key);
-    switch (provider.toLowerCase().trim()) {
+    final p = provider.toLowerCase().trim();
+    bool ok;
+    switch (p) {
       case 'gemini':
-        storageService.geminiKey = clean;
-        break;
       case 'groq':
-        storageService.groqKey = clean;
-        break;
       case 'openrouter':
-        storageService.openRouterKey = clean;
+        ok = await storageService.saveKey(p, clean);
         break;
+      default:
+        ok = false;
     }
-    _testStatus = clean.isEmpty ? 'Active & Ready' : 'Key Saved Successfully';
+    _testStatus = ok
+        ? (clean.isEmpty ? 'Active & Ready' : 'Key Saved Successfully')
+        : 'Save failed: ${storageService.lastKeyWriteError ?? 'secure storage unavailable'}';
     notifyListeners();
+    return ok;
   }
 
   void deleteKey(String provider) {

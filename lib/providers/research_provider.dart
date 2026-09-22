@@ -121,13 +121,13 @@ class ResearchProvider with ChangeNotifier {
       reasoningSteps: [
         ReasoningStep(
           title: 'Topic Identified: $topicLabel',
-          detail: 'Retrieved relevant juristic texts for: $topicLabel',
+          detail: 'Client-side classification; question dispatched to Shirazi Oracle',
           duration: '0.28s',
           isCompleted: true,
         ),
         ReasoningStep(
           title: 'Madhhab Filter: ${effectiveMadhhab.isNotEmpty ? effectiveMadhhab : "Unspecified"}',
-          detail: 'Applying usul al-fiqh constraints and relevance guard...',
+          detail: 'Preference sent with the request; applied by the Oracle server',
           isProcessing: true,
         ),
       ],
@@ -140,19 +140,19 @@ class ResearchProvider with ChangeNotifier {
       reasoningSteps: [
         ReasoningStep(
           title: 'Topic Identified: $topicLabel',
-          detail: 'Retrieved relevant juristic texts for: $topicLabel',
+          detail: 'Client-side classification; question dispatched to Shirazi Oracle',
           duration: '0.28s',
           isCompleted: true,
         ),
         ReasoningStep(
           title: 'Madhhab Filter: ${effectiveMadhhab.isNotEmpty ? effectiveMadhhab : "Unspecified"}',
-          detail: 'Relevance guard applied — cross-referencing Hadith chains',
+          detail: 'Preference sent with the request; applied by the Oracle server',
           duration: '0.45s',
           isCompleted: true,
         ),
         const ReasoningStep(
-          title: 'Synthesizing Juristic Precedent (Takhrij al-Furu\')',
-          detail: 'Formulating source-grounded synthesis...',
+          title: 'Awaiting Oracle Response',
+          detail: 'Shirazi Oracle research pipeline running — the answer will arrive from the server...',
           isProcessing: true,
         ),
       ],
@@ -207,45 +207,52 @@ class ResearchProvider with ChangeNotifier {
     final isQuotaExhausted = result['status'] == 'QUOTA_EXHAUSTED';
     final oracleKeysUsed = result['oracle_keys_used'] == true;
     final resultCitations = (result['citations'] as List? ?? []).map((c) => c.toString()).toList();
-    // Provenance gate (§5): refuse SUCCESS results lacking the Oracle tag.
+    // Honest-failure rule (§6): never invent a scholarly answer. If there is
+    // no answer text, show the exhaustion message — never a fabricated
+    // placeholder Arabic sentence.
     final oracleSourced = result['source'] == 'shirazi-oracle';
+    final noAnswerText = (result['answer'] as String?)?.trim().isEmpty ?? true;
     final answerText = isQuotaExhausted
         ? ApiService.getQuotaExhaustedMessage(storageService.language, oracleKeysUsed)
         : (result['status'] == 'SUCCESS' && !oracleSourced
             ? ApiService.getExhaustionMessage(storageService.language)
-            : (result['answer'] ?? 'المسألة محل بحث ونظر بين أهل العلم...'));
+            : (noAnswerText
+                ? ApiService.getExhaustionMessage(storageService.language)
+                : result['answer']));
 
     _isProcessing = false;
     _activeInquiry = _activeInquiry.copyWith(
       scholarlyAnswerArabic: answerText,
       urduAnnotation: isByok
-          ? 'خلاصۂ فقہی: مفتاح ذاتی ($byokProv) کے ذریعے تخریج شدہ جواب ($effectiveMadhhab مذہب).'
+          // BYOK keys only ever travel to the Oracle pipeline (§7); the
+          // answer still comes from the Shirazi Oracle Server.
+          ? 'خلاصۂ فقہی: آپ کی ذاتی کلید شیرازی اوریکل پائپ لائن کے ذریعے استعمال ہوئی ($effectiveMadhhab مذہب).'
           : (isRealtime
-              ? 'خلاصۂ فقہی: شیرازی کور ایجنٹ سے حاصل کردہ مصدقہ جواب ($effectiveMadhhab مذہب).'
-              : 'خلاصۂ فقہی: مذکورہ مسئلہ میں فقہ ($effectiveMadhhab) کے اقوال کی روشنی میں تحقیق مکمل کی گئی ہے۔'),
+              ? 'خلاصۂ فقہی: شیرازی اوریکل سے براہِ راست حاصل کردہ جواب ($effectiveMadhhab مذہب).'
+              : 'خلاصۂ فقہی: شیرازی اوریکل سے حاصل کردہ جواب ($effectiveMadhhab مذہب).'),
       isByokFallback: isByok,
       byokProvider: isByok ? byokProv : (isRealtime ? 'Shirazi Core Agent (Live)' : ''),
       citations: resultCitations.isNotEmpty ? resultCitations : null,
       reasoningSteps: [
         ReasoningStep(
           title: 'Topic Identified: $topicLabel',
-          detail: 'Retrieved relevant juristic texts for: $topicLabel',
+          detail: 'Client-side classification; question dispatched to Shirazi Oracle',
           duration: '0.28s',
           isCompleted: true,
         ),
         ReasoningStep(
           title: 'Madhhab Filter: ${effectiveMadhhab.isNotEmpty ? effectiveMadhhab : "Unspecified"}',
-          detail: 'Relevance guard verified — topic match confirmed',
+          detail: 'Preference sent with the request; applied by the Oracle server',
           duration: '0.45s',
           isCompleted: true,
         ),
         ReasoningStep(
-          title: 'Synthesizing Juristic Precedent (Takhrij al-Furu\')',
+          title: 'Oracle Response Received',
           detail: isByok
-              ? 'Synthesized via Personal BYOK Engine ($byokProv)'
+              ? 'Personal key routed to Shirazi Oracle pipeline ($byokProv) — answer came from the Oracle'
               : (isRealtime
-                  ? 'Authenticated live via Shirazi Agent Core & Gateway'
-                  : 'Final synthesis authenticated with classical references'),
+                  ? 'Response arrived over the live Oracle channel; citations shown only as provided by the server'
+                  : 'Response received from Shirazi Oracle; citations shown only as provided by the server'),
           duration: '0.39s',
           isCompleted: true,
         ),
