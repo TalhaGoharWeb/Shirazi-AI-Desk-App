@@ -423,14 +423,48 @@ class ChatProvider with ChangeNotifier {
     _serverLatencyMs = latencyMs;
 
     final isExhausted = result['status'] == 'EXHAUSTED' || result['isExhausted'] == true;
+    final isQuotaExhausted = result['status'] == 'QUOTA_EXHAUSTED';
+    final oracleKeysUsed = result['oracle_keys_used'] == true;
     final isByok = result['isByokFallback'] == true;
     final byokProv = result['byokProvider'] as String? ?? '';
     final isRealtime = result['isRealtimeStream'] == true;
     final resultCitations = (result['citations'] as List? ?? []).map((c) => c.toString()).toList();
-    final answerText = result['answer'] as String? ?? 'المسألة محل بحث وتحقيق بين المذاهب...';
+    // Provenance: every normal answer must carry the Oracle source tag. If a
+    // SUCCESS result ever arrives without it, we treat it as untrusted.
+    final oracleSourced = result['source'] == 'shirazi-oracle';
+    final answerText = isQuotaExhausted
+        ? ApiService.getQuotaExhaustedMessage(queryLang, oracleKeysUsed)
+        : (result['answer'] as String? ?? 'المسألة محل بحث وتحقيق بين المذاهب...');
+
+    // ── Provenance gate (§5): a SUCCESS result without the Oracle source tag
+    // is untrusted — it did not verifiably come through the Shirazi Oracle
+    // channel. We refuse to display it as a Shirazi answer.
+    final isUntrustedSuccess =
+        result['status'] == 'SUCCESS' && !oracleSourced;
+    if (isUntrustedSuccess) {
+      debugPrint('[ChatProvider] Refusing SUCCESS result without shirazi-oracle provenance.');
+    }
+    final effectiveExhausted = isExhausted || isQuotaExhausted || isUntrustedSuccess;
 
     List<ReasoningStep> finalSteps;
-    if (isExhausted) {
+    if (isQuotaExhausted) {
+      finalSteps = [
+        const ReasoningStep(
+          title: 'Shirazi Oracle: inference capacity exhausted',
+          detail: 'Research pipeline ran; no inference quota available',
+          duration: '0.12s',
+          isCompleted: false,
+        ),
+        ReasoningStep(
+          title: 'Answer policy: no substitute generated',
+          detail: oracleKeysUsed
+              ? 'Personal key already routed via Shirazi pipeline — still at capacity'
+              : 'Add a personal API key in Settings to route via the Shirazi pipeline',
+          duration: '0.10s',
+          isCompleted: false,
+        ),
+      ];
+    } else if (isExhausted || isUntrustedSuccess) {
       finalSteps = [
         const ReasoningStep(
           title: 'Primary Shirazi Server & Core Gateway',
@@ -500,9 +534,9 @@ class ChatProvider with ChangeNotifier {
           ? null
           : (isByok ? byokProv : (isRealtime ? 'Shirazi Core Agent (Live)' : null)),
       isByokFallback: isByok,
-      isError: isExhausted,
-      canRetry: isExhausted || isSourceNotFound,
-      failedQuery: (isExhausted || isSourceNotFound) ? query : null,
+      isError: effectiveExhausted,
+      canRetry: effectiveExhausted || isSourceNotFound,
+      failedQuery: (effectiveExhausted || isSourceNotFound) ? query : null,
       messageType: msgType,
     );
 

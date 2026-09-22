@@ -204,11 +204,20 @@ class ResearchProvider with ChangeNotifier {
     final isByok = result['isByokFallback'] == true;
     final byokProv = result['byokProvider'] as String? ?? '';
     final isRealtime = result['isRealtimeStream'] == true;
+    final isQuotaExhausted = result['status'] == 'QUOTA_EXHAUSTED';
+    final oracleKeysUsed = result['oracle_keys_used'] == true;
     final resultCitations = (result['citations'] as List? ?? []).map((c) => c.toString()).toList();
+    // Provenance gate (§5): refuse SUCCESS results lacking the Oracle tag.
+    final oracleSourced = result['source'] == 'shirazi-oracle';
+    final answerText = isQuotaExhausted
+        ? ApiService.getQuotaExhaustedMessage(storageService.language, oracleKeysUsed)
+        : (result['status'] == 'SUCCESS' && !oracleSourced
+            ? ApiService.getExhaustionMessage(storageService.language)
+            : (result['answer'] ?? 'المسألة محل بحث ونظر بين أهل العلم...'));
 
     _isProcessing = false;
     _activeInquiry = _activeInquiry.copyWith(
-      scholarlyAnswerArabic: result['answer'] ?? 'المسألة محل بحث ونظر بين أهل العلم...',
+      scholarlyAnswerArabic: answerText,
       urduAnnotation: isByok
           ? 'خلاصۂ فقہی: مفتاح ذاتی ($byokProv) کے ذریعے تخریج شدہ جواب ($effectiveMadhhab مذہب).'
           : (isRealtime

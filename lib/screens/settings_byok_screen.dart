@@ -124,7 +124,7 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Provide your personal AI key for faster, private, and unlimited scholarly research and jurisprudential reasoning.',
+                  'Provide your personal AI key as a fallback when the Shirazi Oracle\u2019s own inference capacity is exhausted.',
                   style: ShiraziTypography.bodySm(color: ShiraziColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 10),
@@ -134,7 +134,7 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Stored only on this device. Never uploaded to central servers.',
+                        'Stored encrypted on this device. Only ever sent to your Shirazi Oracle server, which runs its full research pipeline with it \u2014 never used for direct AI answers.',
                         style: ShiraziTypography.bodySm(color: ShiraziColors.onSurfaceVariant),
                       ),
                     ),

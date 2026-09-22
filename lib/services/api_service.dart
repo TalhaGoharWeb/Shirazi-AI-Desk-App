@@ -138,6 +138,17 @@ class ApiService {
     IO.Socket? socket;
     Timer? timeoutTimer;
 
+    // Client-generated correlation ID for this Oracle request (§5).
+    // The server does not issue request IDs, so we tag our own side of the
+    // exchange and never fabricate server-side metadata.
+    final requestId =
+        'req_${DateTime.now().millisecondsSinceEpoch}_${(DateTime.now().microsecond % 900000) + 100000}';
+    final socketStopwatch = Stopwatch()..start();
+
+    // Tracks whether the question was actually delivered to the Oracle over
+    // the socket channel. Used to avoid accidental duplicate submissions.
+    bool socketDelivered = false;
+
     final userKeysPayload = <String, String>{};
     if (byokProvider != null && byokKey != null && byokKey.trim().isNotEmpty) {
       userKeysPayload[byokProvider.toLowerCase()] = byokKey.trim();
@@ -167,6 +178,7 @@ class ApiService {
           'provider_priority': providerPriority,
           'channel': 'mobile_app',
         });
+        socketDelivered = true;
       });
 
       socket.on('agent-progress', (data) {
@@ -254,16 +266,49 @@ class ApiService {
           if (answer.isNotEmpty && !isOutage && !isMadhhabMismatch) {
             completer.complete({
               'status': 'SUCCESS',
+              // ── Server identity / provenance (§5) ──────────────────────
+              // These fields are CLIENT-OBSERVED transport provenance: they
+              // prove this answer arrived over the Oracle channel. The server
+              // does not currently issue request/response IDs, so none are
+              // fabricated here.
+              'source': 'shirazi-oracle',
+              'request_id': requestId,
+              'transport': 'socket.io',
+              'oracle_url': baseUrl,
+              'answered_at': DateTime.now().toUtc().toIso8601String(),
+              'latency_ms': socketStopwatch.elapsedMilliseconds,
+              // ──────────────────────────────────────────────────────────
               'answer': answer,
               'citations': citations,
               'isRealtimeStream': true,
               'byokProvider': 'Shirazi Core Agent (Live)',
+              'isByokFallback': false,
             });
           } else if (isMadhhabMismatch) {
-            debugPrint('[ApiService] Server cached answer rejected: madhhab mismatch (requested $madhhab). Cascading to BYOK...');
+            debugPrint('[ApiService] Server cached answer rejected: madhhab mismatch (requested $madhhab).');
             completer.completeError('Server returned answer with madhhab mismatch (requested $madhhab)');
           } else if (isOutage) {
-            completer.completeError('Server limit reached or upstream outage');
+            // The Oracle's research pipeline ran but its inference capacity is
+            // exhausted. This is NOT answered by any other AI: we surface a
+            // structured quota state so the UI can offer an explicit,
+            // consent-based retry THROUGH the Oracle with the user's key.
+            completer.complete({
+              'status': 'QUOTA_EXHAUSTED',
+              'source': 'shirazi-oracle',
+              'request_id': requestId,
+              'transport': 'socket.io',
+              'oracle_url': baseUrl,
+              'answered_at': DateTime.now().toUtc().toIso8601String(),
+              'latency_ms': socketStopwatch.elapsedMilliseconds,
+              'answer': '',
+              'citations': <String>[],
+              'isRealtimeStream': true,
+              'oracle_keys_used': userKeysPayload.isNotEmpty,
+              'canRetry': true,
+              'canRetryWithByok': userKeysPayload.isEmpty,
+              'isByokFallback': false,
+              'byokProvider': null,
+            });
           }
         }
       });
@@ -296,12 +341,15 @@ class ApiService {
 
       socket.connect();
 
-      // Responsive timeout: 5s if fallback keys exist, else 8s
-      final hasAnyFallbackKey = userKeysPayload.isNotEmpty;
-      final maxWaitSeconds = hasAnyFallbackKey ? 5 : 8;
-      timeoutTimer = Timer(Duration(seconds: maxWaitSeconds), () {
+      // Research-realistic timeout: the Oracle's research pipeline (retrieval
+      // across Shamela sources + verification + synthesis) takes 30-90s on a
+      // healthy server. Progress events keep the UI alive while we wait.
+      // We do NOT time out early and we NEVER cascade to a direct client-side
+      // AI call: every answer must come from the Shirazi Oracle Server.
+      const maxWaitSeconds = 150;
+      timeoutTimer = Timer(const Duration(seconds: maxWaitSeconds), () {
         if (!completer.isCompleted) {
-          completer.completeError(TimeoutException('Socket response timed out after ${maxWaitSeconds}s'));
+          completer.completeError(TimeoutException('Shirazi Oracle response timed out after ${maxWaitSeconds}s'));
         }
       });
 
@@ -311,7 +359,7 @@ class ApiService {
       socket.dispose();
       return result;
     } catch (e) {
-      debugPrint('Primary Shirazi socket attempt yielded: $e. Initiating multi-tier fallback cascade...');
+      debugPrint('Primary Shirazi socket attempt yielded: $e. Checking HTTP transport alternative...');
     } finally {
       timeoutTimer?.cancel();
       try {
@@ -320,23 +368,18 @@ class ApiService {
       } catch (_) {}
     }
 
-    // Step 2: Multi-Tier Server-Side BYOK Failover (Sections 16, 17, 18, 19: No RAG Bypass)
-    // Send user's configured BYOK keys to Shirazi Oracle Server to run full Shamela research pipeline
-    if (autoFailover && userKeysPayload.isNotEmpty) {
-      final priorityList = <String>[];
-      if (providerPriority != null && providerPriority.isNotEmpty) {
-        priorityList.addAll(providerPriority);
-      } else if (byokProvider != null && byokProvider.isNotEmpty) {
-        priorityList.add(byokProvider);
-      }
-      for (final k in userKeysPayload.keys) {
-        if (!priorityList.contains(k)) {
-          priorityList.add(k);
-        }
-      }
-
+    // Step 2: HTTP transport alternative — SAME Oracle, SAME pipeline.
+    // Reached only when the socket.io transport itself failed (connect error),
+    // i.e. the question was never delivered. The user's keys travel to the
+    // Shirazi Oracle Server, which runs its full Shamela research / retrieval /
+    // verification pipeline using them for inference. The app NEVER calls a
+    // provider API directly.
+    // NOTE: this step is skipped after a delivered-but-unanswered socket
+    // attempt (timeout) to avoid accidentally submitting the same research
+    // question twice — the user retries explicitly instead (§13).
+    if (socketDelivered == false && autoFailover) {
       if (onProgress != null) {
-        onProgress('Connecting to Shirazi Research Oracle with BYOK failover...');
+        onProgress('Socket channel unavailable — trying Shirazi Oracle over HTTP...');
       }
 
       try {
@@ -349,45 +392,72 @@ class ApiService {
             'lang': lang,
             'madhhab': madhhab,
             'user_keys': userKeysPayload,
-            'provider_priority': priorityList,
+            'provider_priority': priorityListFor(userKeysPayload, providerPriority, byokProvider),
             'channel': 'mobile_app',
           }),
-        ).timeout(const Duration(seconds: 45));
+        ).timeout(const Duration(seconds: 90));
 
         if (httpRes.statusCode == 200) {
           final data = jsonDecode(httpRes.body) as Map<String, dynamic>;
           if (data['status'] == 'SUCCESS' && data['answer'] != null) {
-            return {
-              'status': 'SUCCESS',
-              'answer': data['answer'],
-              'citations': data['citations'] ?? <String>[],
-              'madhhab': data['madhhab'],
-              'requires_madhhab_selection': data['requires_madhhab_selection'] ?? false,
-              'isRealtimeStream': false,
-              'byokProvider': data['provider'] ?? 'Shirazi Oracle (BYOK)',
-            };
+            final answer = data['answer'].toString();
+            if (answer.isNotEmpty && !isLimitOrOutage(data, answer)) {
+              return {
+                'status': 'SUCCESS',
+                'source': 'shirazi-oracle',
+                'request_id': requestId,
+                'transport': 'http',
+                'oracle_url': baseUrl,
+                'answered_at': DateTime.now().toUtc().toIso8601String(),
+                'answer': answer,
+                'citations': data['citations'] ?? <String>[],
+                'madhhab': data['madhhab'],
+                'requires_madhhab_selection': data['requires_madhhab_selection'] ?? false,
+                'isRealtimeStream': false,
+                'isByokFallback': false,
+                'byokProvider': userKeysPayload.isNotEmpty
+                    ? 'Shirazi Oracle (personal key via pipeline)'
+                    : 'Shirazi Oracle (HTTP)',
+              };
+            }
+            // Oracle answered but its inference capacity is exhausted.
+            return _quotaExhaustedResult(
+              requestId: requestId,
+              transport: 'http',
+              oracleKeysUsed: userKeysPayload.isNotEmpty,
+            );
           }
+        } else if (httpRes.statusCode == 429) {
+          debugPrint('[ApiService] Oracle HTTP 429: inference quota exhausted.');
+          return _quotaExhaustedResult(
+            requestId: requestId,
+            transport: 'http',
+            oracleKeysUsed: userKeysPayload.isNotEmpty,
+          );
+        } else if (httpRes.statusCode == 401 || httpRes.statusCode == 403) {
+          debugPrint('[ApiService] Oracle HTTP ${httpRes.statusCode}: auth rejected.');
+          return _oracleErrorResult(
+            requestId: requestId,
+            transport: 'http',
+            message: _getAuthErrorMessage(lang),
+          );
+        } else if (httpRes.statusCode >= 500) {
+          debugPrint('[ApiService] Oracle HTTP ${httpRes.statusCode}: server error.');
         }
+      } on TimeoutException {
+        debugPrint('[ApiService] Oracle HTTP /api/chat timed out.');
       } catch (e) {
-        debugPrint('[ApiService] Server-side BYOK fallback request failed: $e');
+        debugPrint('[ApiService] Oracle HTTP fallback failed: $e');
       }
     }
 
-    // Step 2b: Direct Client-Side BYOK Failover (when server is offline / unreachable)
-    if (userKeysPayload.isNotEmpty) {
-      final directClientResult = await _executeDirectClientByok(
-        text: text,
-        persona: persona,
-        lang: lang,
-        madhhab: madhhab,
-        userKeysPayload: userKeysPayload,
-        providerPriority: providerPriority,
-        onProgress: onProgress,
-      );
-      if (directClientResult != null) {
-        return directClientResult;
-      }
-    }
+    // REMOVED (Step 2b): _executeDirectClientByok — the old direct client-side
+    // calls to Groq / Gemini / OpenRouter REST APIs. That path answered the
+    // user's question with a generic AI model and a hand-written system prompt,
+    // completely bypassing the Shirazi research / retrieval / verification
+    // pipeline. It violated the core product requirement and has been deleted.
+    // User keys are now ONLY ever sent to the Shirazi Oracle Server, which
+    // runs its own pipeline with them for inference (§7).
 
     // Step 3: Probe server's canonical fatwa library for matching verified inquiry
     final target = FiqhQueryAnalyzer.analyze(text, lang: lang).copyWith(
@@ -404,9 +474,15 @@ class ApiService {
     }
 
     // Step 4: Graceful Failure Protocol (Requirement 6: Never fabricate an answer)
-    final exhaustionMsg = _getExhaustionMessage(lang);
+    // The Oracle could not answer and no verified cached fatwa matched. We
+    // return an honest, localized exhaustion notice — NEVER a substituted AI
+    // answer. The user's question is preserved for retry.
+    final exhaustionMsg = getExhaustionMessage(lang);
     return {
       'status': 'EXHAUSTED',
+      'request_id': requestId,
+      'oracle_url': baseUrl,
+      'answered_at': DateTime.now().toUtc().toIso8601String(),
       'error': exhaustionMsg,
       'answer': exhaustionMsg,
       'isExhausted': true,
@@ -417,8 +493,114 @@ class ApiService {
     };
   }
 
+  /// Builds the ordered provider-priority list for a server-side BYOK request.
+  static List<String> priorityListFor(
+    Map<String, String> userKeysPayload,
+    List<String>? providerPriority,
+    String? byokProvider,
+  ) {
+    final priorityList = <String>[];
+    if (providerPriority != null && providerPriority.isNotEmpty) {
+      priorityList.addAll(providerPriority);
+    } else if (byokProvider != null && byokProvider.isNotEmpty) {
+      priorityList.add(byokProvider);
+    }
+    for (final k in userKeysPayload.keys) {
+      if (!priorityList.contains(k)) {
+        priorityList.add(k);
+      }
+    }
+    return priorityList;
+  }
+
+  /// Structured quota-exhaustion result. The Oracle ran but its inference
+  /// capacity is spent. No answer is fabricated; the UI offers an explicit,
+  /// consent-based retry through the Oracle pipeline.
+  Map<String, dynamic> _quotaExhaustedResult({
+    required String requestId,
+    required String transport,
+    required bool oracleKeysUsed,
+  }) {
+    return {
+      'status': 'QUOTA_EXHAUSTED',
+      'source': 'shirazi-oracle',
+      'request_id': requestId,
+      'transport': transport,
+      'oracle_url': baseUrl,
+      'answered_at': DateTime.now().toUtc().toIso8601String(),
+      'answer': '',
+      'citations': <String>[],
+      'oracle_keys_used': oracleKeysUsed,
+      'canRetry': true,
+      'canRetryWithByok': !oracleKeysUsed,
+      'isByokFallback': false,
+      'byokProvider': null,
+    };
+  }
+
+  /// Structured Oracle error result (auth rejection, server error, ...).
+  Map<String, dynamic> _oracleErrorResult({
+    required String requestId,
+    required String transport,
+    required String message,
+  }) {
+    return {
+      'status': 'EXHAUSTED',
+      'source': 'shirazi-oracle',
+      'request_id': requestId,
+      'transport': transport,
+      'oracle_url': baseUrl,
+      'answered_at': DateTime.now().toUtc().toIso8601String(),
+      'error': message,
+      'answer': message,
+      'isExhausted': true,
+      'canRetry': true,
+      'citations': <String>[],
+      'byokProvider': null,
+      'isByokFallback': false,
+    };
+  }
+
+  /// Localized notice for Oracle inference-quota exhaustion.
+  /// [oracleKeysUsed] tells whether the user's personal key was already routed
+  /// through the Shirazi pipeline for this question.
+  static String getQuotaExhaustedMessage(String lang, bool oracleKeysUsed) {
+    switch (lang) {
+      case 'ur':
+        return oracleKeysUsed
+            ? 'شیرازی تحقیقی سرور کی موجودہ استعدادی گنجائش ختم ہو چکی ہے — آپ کی ذاتی API Key شیرازی تحقیقی پائپ لائن کے ذریعے پہلے ہی استعمال ہو چکی ہے۔\n\n'
+                'کوئی متبادل AI جواب نہیں دیا گیا۔ آپ کا سوال محفوظ ہے؛ کچھ دیر بعد "دوبارہ کوشش" دبائیں۔'
+            : 'شیرازی تحقیقی سرور کی موجودہ استعدادی گنجائش ختم ہو چکی ہے۔\n\n'
+                'کوئی متبادل AI جواب نہیں دیا گیا۔ آپ ترتیبات میں اپنی ذاتی API Key شامل کر سکتے ہیں — وہ صرف شیرازی تحقیقی پائپ لائن کے ذریعے استعمال ہوگی، براہِ راست جواب کے لیے کبھی نہیں۔';
+      case 'ar':
+        return oracleKeysUsed
+            ? 'بلغت السعة الاستدلالية لخادم الشيرازي البحثي حدها — وقد تم بالفعل استخدام مفتاح API الشخصي الخاص بك عبر خط أنابيب الشيرازي البحثي.\n\n'
+                'لم يتم توليد أي إجابة بديلة. سؤالك محفوظ؛ اضغط "إعادة المحاولة" بعد قليل.'
+            : 'بلغت السعة الاستدلالية لخادم الشيرازي البحثي حدها الحالي.\n\n'
+                'لم يتم توليد أي إجابة بديلة. يمكنك إضافة مفتاح API شخصي في الإعدادات — سيُستخدم عبر خط أنابيب الشيرازي البحثي فقط، وليس للإجابة المباشرة أبداً.';
+      default:
+        return oracleKeysUsed
+            ? 'The Shirazi Research Server has reached its current inference capacity — your personal API key was already routed through the Shirazi research pipeline for this question.\n\n'
+                'No substitute AI answer has been generated. Your question is preserved; tap "Retry Query" shortly.'
+            : 'The Shirazi Research Server has reached its current inference capacity.\n\n'
+                'No substitute AI answer has been generated. You may add a personal API key in Settings — it will only ever be used through the Shirazi research pipeline, never for direct answers.';
+    }
+  }
+
+  /// Localized notice for Oracle authentication rejection.
+  static String _getAuthErrorMessage(String lang) {
+    switch (lang) {
+      case 'ur':
+        return 'شیرازی سرور نے درخواست کی توثیق مسترد کر دی ہے۔\n\nکوئی جواب تیار نہیں کیا گیا۔ براہِ کرم دوبارہ سائن ان کریں یا کچھ دیر بعد دوبارہ کوشش کریں۔';
+      case 'ar':
+        return 'رفض خادم الشيرازي مصادقة هذا الطلب.\n\nلم يتم إنشاء أي إجابة. يرجى تسجيل الدخول مرة أخرى أو إعادة المحاولة لاحقاً.';
+      default:
+        return 'The Shirazi server rejected this request\u2019s authentication.\n\nNo answer has been generated. Please sign in again or retry shortly.';
+    }
+  }
+
   /// Localized exhaustion error notice preserving question for 1-tap retry
-  static String _getExhaustionMessage(String lang) {
+  static String getExhaustionMessage(String lang) {
     switch (lang) {
       case 'ur':
         return 'اس وقت شیرازی تحقیقی سرور اور تمام دستیاب فال بیک ذرائع عارضی طور پر مصروف یا دستیاب نہیں ہیں۔\n\n'
@@ -430,181 +612,6 @@ class ApiService {
         return 'The Shirazi research network and configured fallback providers are currently at capacity or temporarily unavailable.\n\n'
             'Your question has been preserved. You can tap "Retry Query" or configure a personal API key in Settings.';
     }
-  }
-
-  /// Direct client-side BYOK execution when Shirazi backend server is unreachable.
-  /// Calls Groq / Gemini / OpenRouter REST APIs directly using the user's personal key.
-  Future<Map<String, dynamic>?> _executeDirectClientByok({
-    required String text,
-    required String persona,
-    required String lang,
-    String? madhhab,
-    required Map<String, String> userKeysPayload,
-    List<String>? providerPriority,
-    Function(String)? onProgress,
-  }) async {
-    if (userKeysPayload.isEmpty) return null;
-
-    final priorityList = <String>[];
-    if (providerPriority != null && providerPriority.isNotEmpty) {
-      for (final p in providerPriority) {
-        final pNorm = p.toLowerCase().trim();
-        if (pNorm.isNotEmpty && !priorityList.contains(pNorm)) {
-          priorityList.add(pNorm);
-        }
-      }
-    }
-    for (final k in userKeysPayload.keys) {
-      final kNorm = k.toLowerCase().trim();
-      if (kNorm.isNotEmpty && !priorityList.contains(kNorm)) {
-        priorityList.add(kNorm);
-      }
-    }
-
-    final String langName = lang == 'ur'
-        ? 'Urdu (اردو)'
-        : (lang == 'ar' ? 'Arabic (العربية)' : 'English');
-    final String selectedMadhhab = madhhab ?? 'Hanafi';
-
-    final systemPrompt = '''
-You are an authoritative, highly respectful Islamic Jurisprudence Scholar (Muhaqqiq / Faqih) in the $selectedMadhhab Madhhab.
-Task: Provide a detailed, authentic Islamic jurisprudential (Fiqh) ruling and explanation for the user's question.
-Language Requirement: You MUST respond in $langName.
-
-Guidelines:
-1. Address the question strictly according to the $selectedMadhhab Madhhab principles.
-2. Structure your response clearly:
-   - Ruling / Summary (الحكم / خلاصہ)
-   - Shariah Principles & Evidence (الأدلة والأصول)
-   - Detailed Explanation (التحقيق والتفصيل)
-3. Maintain classical scholarly tone and respect for the Shariah.
-''';
-
-    for (final provider in priorityList) {
-      final apiKey = userKeysPayload[provider] ??
-          userKeysPayload[provider.toLowerCase()] ??
-          userKeysPayload[provider.toUpperCase()];
-      if (apiKey == null || apiKey.trim().isEmpty) continue;
-      final cleanKey = sanitizeApiKey(apiKey);
-
-      try {
-        if (provider.toLowerCase() == 'groq') {
-          if (onProgress != null) onProgress('Consulting Groq (LLaMA 3.3) directly...');
-          final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
-          final res = await http.post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $cleanKey',
-            },
-            body: jsonEncode({
-              'model': 'llama-3.3-70b-versatile',
-              'messages': [
-                {'role': 'system', 'content': systemPrompt},
-                {'role': 'user', 'content': text},
-              ],
-              'temperature': 0.3,
-              'max_tokens': 1500,
-            }),
-          ).timeout(const Duration(seconds: 25));
-
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body);
-            final answer = data['choices']?[0]?['message']?['content']?.toString() ?? '';
-            if (answer.trim().isNotEmpty) {
-              return {
-                'status': 'SUCCESS',
-                'answer': answer,
-                'citations': <String>[],
-                'madhhab': selectedMadhhab,
-                'isRealtimeStream': false,
-                'byokProvider': 'Groq (LLaMA 3.3)',
-              };
-            }
-          }
-        } else if (provider.toLowerCase() == 'gemini') {
-          if (onProgress != null) onProgress('Consulting Gemini (Flash) directly...');
-          final url = Uri.parse(
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$cleanKey',
-          );
-          final res = await http.post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': [
-                {
-                  'parts': [
-                    {'text': '$systemPrompt\n\nUser Question:\n$text'}
-                  ]
-                }
-              ],
-              'generationConfig': {
-                'temperature': 0.3,
-                'maxOutputTokens': 1500,
-              }
-            }),
-          ).timeout(const Duration(seconds: 25));
-
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body);
-            final candidates = data['candidates'] as List? ?? [];
-            if (candidates.isNotEmpty) {
-              final parts = candidates[0]['content']?['parts'] as List? ?? [];
-              final textContent = parts.map((p) => p['text'] ?? '').join('\n');
-              if (textContent.trim().isNotEmpty) {
-                return {
-                  'status': 'SUCCESS',
-                  'answer': textContent,
-                  'citations': <String>[],
-                  'madhhab': selectedMadhhab,
-                  'isRealtimeStream': false,
-                  'byokProvider': 'Gemini (Flash)',
-                };
-              }
-            }
-          }
-        } else if (provider.toLowerCase() == 'openrouter') {
-          if (onProgress != null) onProgress('Consulting OpenRouter directly...');
-          final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
-          final res = await http.post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $cleanKey',
-              'HTTP-Referer': 'https://shirazi.ai',
-              'X-Title': 'Shirazi AI',
-            },
-            body: jsonEncode({
-              'model': 'meta-llama/llama-3.3-70b-instruct',
-              'messages': [
-                {'role': 'system', 'content': systemPrompt},
-                {'role': 'user', 'content': text},
-              ],
-              'temperature': 0.3,
-              'max_tokens': 1500,
-            }),
-          ).timeout(const Duration(seconds: 25));
-
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body);
-            final answer = data['choices']?[0]?['message']?['content']?.toString() ?? '';
-            if (answer.trim().isNotEmpty) {
-              return {
-                'status': 'SUCCESS',
-                'answer': answer,
-                'citations': <String>[],
-                'madhhab': selectedMadhhab,
-                'isRealtimeStream': false,
-                'byokProvider': 'OpenRouter',
-              };
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[ApiService] Direct client BYOK ($provider) error: $e');
-      }
-    }
-    return null;
   }
 
   /// Searches the server's live fatwa queue using topic entity matching and strict madhhab filtering.
@@ -684,10 +691,16 @@ Guidelines:
               }
               return {
                 'status': 'SUCCESS',
+                'source': 'shirazi-oracle',
+                'request_id': 'req_fatwa_${DateTime.now().millisecondsSinceEpoch}',
+                'transport': 'http',
+                'oracle_url': baseUrl,
+                'answered_at': DateTime.now().toUtc().toIso8601String(),
                 'answer': detail.scholarlyAnswerArabic,
                 'citations': detail.citations,
                 'fatwaRef': detail.dossierRef,
                 'isRealtimeStream': true,
+                'isByokFallback': false,
               };
             }
           }
