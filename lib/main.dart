@@ -29,8 +29,18 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final storageService = StorageService(prefs);
-  final apiService = ApiService(baseUrl: storageService.serverUrl);
+  // §7: load BYOK keys from platform secure storage (Keystore/Keychain)
+  // into the memory cache before anything reads them.
+  await storageService.loadSecureKeys();
   final authService = FirebaseAuthService(storageService: storageService);
+  final apiService = ApiService(
+    baseUrl: storageService.serverUrl,
+    // §11: Socket.IO authentication — Firebase ID token attached on connect.
+    authTokenProvider: () => authService.getIdToken(),
+    // §1: never transmit user keys over plain HTTP unless the user
+    // explicitly enables the development override in Settings.
+    allowInsecureHttp: storageService.allowInsecureHttp,
+  );
 
   runApp(
     MultiProvider(

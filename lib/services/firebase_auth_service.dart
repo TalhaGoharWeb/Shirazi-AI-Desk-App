@@ -14,6 +14,20 @@ class FirebaseAuthService {
 
   User? get currentUser => _isFirebaseReady ? FirebaseAuth.instance.currentUser : null;
 
+  /// Returns a fresh Firebase ID token for Oracle authentication (§11).
+  /// Returns null when signed out or Firebase is unavailable. The Oracle
+  /// must verify this token server-side and derive identity from it.
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    try {
+      final user = currentUser;
+      if (user == null) return null;
+      return await user.getIdToken(forceRefresh);
+    } catch (e) {
+      debugPrint('[FirebaseAuthService] getIdToken failed: $e');
+      return null;
+    }
+  }
+
   String get currentUid {
     if (_isFirebaseReady && FirebaseAuth.instance.currentUser != null) {
       return FirebaseAuth.instance.currentUser!.uid;
@@ -283,40 +297,68 @@ class FirebaseAuthService {
 
   static const String superAdminEmail = 'muhaqqiqcreates@gmail.com';
 
-  bool get isSuperAdmin {
+  /// Server-controlled super-admin check (§2, §3).
+  ///
+  /// Trust order:
+  /// 1. Firebase custom claims (`role == 'super_admin'` / `superAdmin == true`)
+  ///    — set only via the Admin SDK script in tools/, never by clients.
+  /// 2. Bootstrap: the Firebase-authenticated account whose VERIFIED email is
+  ///    the designated super-admin address (until the claim is assigned).
+  ///
+  /// NEVER trust `users/{uid}.role` — that document is user-writable and
+  /// trusting it allowed privilege escalation.
+  Future<bool> get isSuperAdmin async {
+    final user = currentUser;
+    if (user == null) return false;
+    try {
+      final token = await user.getIdTokenResult();
+      final claims = token.claims ?? {};
+      if (claims['role'] == 'super_admin' || claims['superAdmin'] == true) {
+        return true;
+      }
+      final email = (token.claims?['email'] as String? ?? user.email ?? '')
+          .trim()
+          .toLowerCase();
+      final verified = token.claims?['email_verified'] == true;
+      if (verified && email == superAdminEmail.toLowerCase()) return true;
+    } catch (e) {
+      debugPrint('[FirebaseAuthService] isSuperAdmin check failed: $e');
+    }
+    return false;
+  }
+
+  /// Legacy synchronous super-admin hint (email match only). Prefer the
+  /// async [isSuperAdmin] which checks server-controlled custom claims.
+  bool get isSuperAdminEmail {
     final email = (currentUser?.email ?? storageService.scholarEmail).trim().toLowerCase();
     return email == superAdminEmail.toLowerCase();
   }
 
-  /// Check if the currently active user has administrator privileges
+  /// Check if the currently active user has administrator privileges.
+  ///
+  /// Server-controlled custom claims ONLY. Removed: Firestore `users/{uid}`
+  /// role lookup (privilege escalation vector) and substring email matching.
   Future<bool> checkIsAdmin() async {
-    final email = (currentUser?.email ?? storageService.scholarEmail).trim().toLowerCase();
-    if (email == superAdminEmail.toLowerCase()) return true;
-    if (email.contains('admin') || storageService.scholarRole.toLowerCase().contains('admin')) {
-      return true;
-    }
-
-    if (_isFirebaseReady && FirebaseAuth.instance.currentUser != null) {
-      final user = FirebaseAuth.instance.currentUser!;
-      final userEmail = user.email?.trim().toLowerCase() ?? '';
-      if (userEmail == superAdminEmail.toLowerCase()) return true;
-      if (userEmail.contains('admin')) return true;
-
-      try {
-        final idToken = await user.getIdTokenResult();
-        final claimRole = idToken.claims?['role'];
-        if (claimRole == 'admin' || claimRole == 'super_admin') return true;
-
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          final role = doc.data()?['role'];
-          if (role == 'admin' || role == 'super_admin') return true;
-        }
-      } catch (e) {
-        debugPrint('Admin check error: $e');
+    final user = currentUser;
+    if (user == null) return false;
+    try {
+      final token = await user.getIdTokenResult();
+      final claims = token.claims ?? {};
+      final role = claims['role'];
+      if (role == 'admin' ||
+          role == 'super_admin' ||
+          claims['admin'] == true ||
+          claims['superAdmin'] == true) {
+        return true;
       }
+      // Bootstrap for the designated super-admin before claims are assigned.
+      final email = (claims['email'] as String? ?? user.email ?? '').trim().toLowerCase();
+      if (claims['email_verified'] == true && email == superAdminEmail.toLowerCase()) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[FirebaseAuthService] checkIsAdmin failed: $e');
     }
-
     return false;
   }
 
