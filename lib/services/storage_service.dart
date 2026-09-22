@@ -50,10 +50,20 @@ class StorageService {
   }
 
   // --- Device-Bound Key Persistence ---
+  // Keys are obfuscated with a device-bound XOR cipher and stored with an
+  // 'enc_' prefix. Plaintext values written by older builds are still read
+  // back correctly by _decryptKey (no-prefix passthrough).
   String _encryptKey(String plain) {
     final clean = plain.trim();
     if (clean.isEmpty) return '';
-    return clean;
+    final salt = 'SHIRAZI_SEC_${guestUid.hashCode.abs()}';
+    final saltBytes = utf8.encode(salt);
+    final plainBytes = utf8.encode(clean);
+    final xored = List<int>.generate(
+      plainBytes.length,
+      (i) => plainBytes[i] ^ saltBytes[i % saltBytes.length],
+    );
+    return 'enc_${base64Encode(xored)}';
   }
 
   String _decryptKey(String cipher) {

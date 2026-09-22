@@ -35,11 +35,11 @@ Built with a **zero-hallucination mandate**, the system incorporates strict Madh
 * **Topic Entity Matching**: Validates retrieved content against the precise entity of the inquiry before presenting answers.
 * **Grounded Source Notices**: If no verified classical source matches the query, the app honestly discloses the absence of verified sources rather than fabricating references.
 
-### ⚡ Multi-Tier Failover & BYOK Resilience
-* **Tier 1 (Shirazi Core Socket)**: Real-time WebSocket streaming with sub-second latency from the primary Shirazi Research Engine.
-* **Tier 2 (Server-Side BYOK)**: Seamless failover sending user's API key to the research cluster pipeline.
-* **Tier 3 (Direct On-Device BYOK)**: On-device direct REST failover communicating straight to **Groq (LLaMA 3.3 70B)**, **Google Gemini (1.5 Flash)**, or **OpenRouter** REST APIs.
-* **Tier 4 (Canonical Fatwa Queue)**: Probes cached verified fatwa dossiers for topic-matched scholarly answers.
+### ⚡ Oracle-Only Answer Guarantee & BYOK Resilience
+* **Tier 1 (Shirazi Core Socket)**: Real-time Socket.IO streaming from the primary Shirazi Research Engine (`http://129.154.242.136:4040`), with a research-realistic 150s window and live progress events.
+* **Tier 2 (Server-Side BYOK)**: If the socket transport itself is unreachable, the same question is sent once over HTTP (`POST /api/chat`) — still to the Shirazi Oracle, which runs its full Shamela research / retrieval / verification pipeline using the user's key for inference.
+* **Tier 3 (Canonical Fatwa Queue)**: Probes the Oracle's verified fatwa library for a topic-matched, madhhab-compatible scholarly answer.
+* **Hard guarantee**: the app NEVER calls Groq / Gemini / OpenRouter (or any AI provider) directly. User keys are only ever transmitted to the Shirazi Oracle Server. If the Oracle cannot answer, the app shows an honest exhaustion notice and preserves the question for retry — it never substitutes a generic AI answer.
 
 ### 🌍 Tri-Lingual Academic Interface
 * Native support for **Urdu (اردو)**, **Classical Arabic (العربية)**, and **Academic English (EN)**.
