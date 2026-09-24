@@ -13,8 +13,8 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 
     project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            freeCompilerArgs += "-Xskip-metadata-version-check"
+        compilerOptions {
+            freeCompilerArgs.add("-Xskip-metadata-version-check")
         }
     }
 }
