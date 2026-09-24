@@ -54,5 +54,5 @@ flutter {
 dependencies {
     // Required by ota_update 7.x (core library desugaring); version per the
     // package's own migration guide for AGP 7.4+.
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
