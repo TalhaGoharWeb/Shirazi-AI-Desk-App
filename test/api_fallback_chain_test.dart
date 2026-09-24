@@ -5,6 +5,8 @@ import 'package:shirazi_app/services/storage_service.dart';
 import 'package:shirazi_app/providers/settings_provider.dart';
 import 'package:shirazi_app/models/chat_models.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -15,31 +17,32 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      mockSecureStorage();
       final prefs = await SharedPreferences.getInstance();
       storage = StorageService(prefs);
       api = ApiService();
       settings = SettingsProvider(storageService: storage, apiService: api);
     });
 
-    test('Device-bound key encryption persists cipher and returns decrypted plain key', () async {
+    test('Secure key storage persists via platform secure storage, never as plaintext prefs', () async {
       const plainKey = 'AIzaSySecretGemini123';
-      storage.geminiKey = plainKey;
+      // NOTE: use the awaitable saveKey — the `geminiKey` setter is
+      // fire-and-forget by design, so it cannot be asserted synchronously.
+      final ok = await storage.saveKey('gemini', plainKey);
+      expect(ok, isTrue);
 
-      // Plain getter returns decrypted key
+      // Plain getter returns the saved key
       expect(storage.geminiKey, plainKey);
 
-      // Verify raw SharedPreferences does NOT store the plaintext key
+      // The plaintext key must NOT land in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      final rawPersisted = prefs.getString('byok_gemini');
-      expect(rawPersisted, isNotNull);
-      expect(rawPersisted, isNot(plainKey));
-      expect(rawPersisted!.startsWith('enc_'), isTrue);
+      expect(prefs.getString('byok_gemini'), isNull);
     });
 
-    test('Fallback chain respects preferred and secondary priority', () {
-      storage.geminiKey = 'gemini-key-123';
-      storage.groqKey = 'groq-key-456';
-      storage.openRouterKey = 'openrouter-key-789';
+    test('Fallback chain respects preferred and secondary priority', () async {
+      await storage.saveKey('gemini', 'gemini-key-123');
+      await storage.saveKey('groq', 'groq-key-456');
+      await storage.saveKey('openrouter', 'openrouter-key-789');
 
       // Default: preferred is gemini, secondary is groq
       storage.preferredProvider = 'gemini';
@@ -56,9 +59,9 @@ void main() {
       expect(chain, ['groq', 'openrouter', 'gemini']);
     });
 
-    test('Disabling a provider removes it from the active fallback chain', () {
-      storage.geminiKey = 'gemini-key-123';
-      storage.groqKey = 'groq-key-456';
+    test('Disabling a provider removes it from the active fallback chain', () async {
+      await storage.saveKey('gemini', 'gemini-key-123');
+      await storage.saveKey('groq', 'groq-key-456');
       storage.preferredProvider = 'gemini';
       storage.secondaryProvider = 'groq';
 
@@ -74,17 +77,19 @@ void main() {
       expect(chain.contains('gemini'), isFalse);
     });
 
-    test('Deleting a provider key removes it from storage and chain', () {
-      storage.geminiKey = 'gemini-key-123';
+    test('Deleting a provider key removes it from storage and chain', () async {
+      await storage.saveKey('gemini', 'gemini-key-123');
       expect(storage.geminiKey, 'gemini-key-123');
 
-      settings.deleteKey('gemini');
+      // Awaitable form of the delete path (SettingsProvider.deleteKey
+      // delegates to it); empty value deletes the key from secure storage.
+      await storage.saveKey('gemini', '');
       expect(storage.geminiKey, '');
       expect(storage.getActiveFallbackChain().contains('gemini'), isFalse);
     });
 
-    test('Masked key protects UI visibility while showing partial identity', () {
-      storage.geminiKey = 'AIzaSyD538FakeKeySample999';
+    test('Masked key protects UI visibility while showing partial identity', () async {
+      await storage.saveKey('gemini', 'AIzaSyD538FakeKeySample999');
       final masked = settings.getMaskedKey('gemini');
 
       expect(masked.startsWith('AIzaSy'), isTrue);
@@ -107,12 +112,15 @@ void main() {
       );
 
       // Verify failure handling conforms to requirement 6:
-      // Does NOT fabricate fake fatwa; returns structured exhaustion state
+      // Does NOT fabricate fake fatwa; returns structured exhaustion state.
+      // NOTE: plain-HTTP endpoints are now refused outright — the client must
+      // never transmit user keys over insecure transport (§1, §5).
       expect(result['status'], 'EXHAUSTED');
       expect(result['isExhausted'], isTrue);
       expect(result['canRetry'], isTrue);
-      expect(result['answer'], contains('تعذر معالجة الطلب'));
-      expect(result['answer'], contains('إعادة المحاولة'));
+      expect(result['failure'], 'insecureTransportBlocked');
+      expect(result['answer'], contains('قيد أمني'));
+      expect(result['answer'], isNot(contains('dummy-invalid-key')));
     });
 
     test('ShiraziChatMessage model accurately serializes isError and canRetry states', () {

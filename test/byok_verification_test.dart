@@ -4,6 +4,8 @@ import 'package:shirazi_app/services/api_service.dart';
 import 'package:shirazi_app/services/storage_service.dart';
 import 'package:shirazi_app/providers/settings_provider.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -34,6 +36,7 @@ void main() {
 
     test('SettingsProvider auto-saves key when testing connection with candidate key', () async {
       SharedPreferences.setMockInitialValues({});
+      mockSecureStorage();
       final prefs = await SharedPreferences.getInstance();
       final storage = StorageService(prefs);
       final api = ApiService();

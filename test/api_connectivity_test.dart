@@ -36,7 +36,18 @@ void main() {
   });
 
   test('Shirazi Online Server Live Fatwas Retrieval Test', () async {
-    final apiService = ApiService(baseUrl: 'https://shirazi-oracle.140-238-250-139.sslip.io');
+    // Authenticated integration test: the fatwa endpoint requires a Firebase
+    // ID token, which unit tests cannot mint. Run it explicitly with:
+    //   flutter test --dart-define=FIREBASE_ID_TOKEN=<id-token>
+    const token = String.fromEnvironment('FIREBASE_ID_TOKEN');
+    if (token.isEmpty) {
+      markTestSkipped('Set FIREBASE_ID_TOKEN to run this live authenticated test');
+      return;
+    }
+    final apiService = ApiService(
+      baseUrl: 'https://shirazi-oracle.140-238-250-139.sslip.io',
+      authTokenProvider: () async => token,
+    );
     final fatwas = await apiService.fetchRealtimeFatwas(fetchFullDetails: false);
     print('Fetched ${fatwas.length} fatwas from live server');
     expect(fatwas.isNotEmpty, true);

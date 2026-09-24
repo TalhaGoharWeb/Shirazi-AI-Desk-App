@@ -71,7 +71,7 @@ void main() {
       expect(strings.navLibrary, 'کتب خانہ');
       expect(strings.navArchive, 'محفوظات');
       expect(strings.navSettings, 'ترتیبات');
-      expect(strings.brandTitle, 'شیرازی فقہ اکیڈمی');
+      expect(strings.brandTitle, 'شیرازی ریسرچ ڈیسک');
       expect(strings.tabVerdict, 'شرعی حکم');
       expect(strings.tabCitations, 'معتمد مراجع');
       expect(strings.bookmarkText, 'محفوظ کریں');
