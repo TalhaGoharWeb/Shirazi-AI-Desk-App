@@ -143,10 +143,8 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                   ),
                   child: Text(
                     msg.isError
-                        ? (isRtl
-                            ? (strings.lang == 'ur' ? 'سروس دستیابی' : 'سعة الخادم')
-                            : 'Gateway Limit')
-                        : (msg.byokProvider ?? 'Cloud Inference'),
+                        ? strings.gatewayLimitLabel
+                        : (msg.byokProvider ?? strings.cloudInferenceLabel),
                     style: ShiraziTypography.dynamicLabel(
                       strings.lang,
                       fontSize: 10,
@@ -182,11 +180,31 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _MadhhabChip(label: 'حنفی', sublabel: 'Hanafi', madhhab: 'Hanafi'),
-                _MadhhabChip(label: 'مالکی', sublabel: 'Maliki', madhhab: 'Maliki'),
-                _MadhhabChip(label: 'شافعی', sublabel: "Shafi'i", madhhab: "Shafi'i"),
-                _MadhhabChip(label: 'حنبلی', sublabel: 'Hanbali', madhhab: 'Hanbali'),
-                _MadhhabChip(label: 'فقہ مقارن', sublabel: 'Comparative (All 4)', madhhab: 'Comparative'),
+                _MadhhabChip(
+                    label: _madhhabNative('Hanafi', strings),
+                    sublabel: _madhhabSub('Hanafi', strings),
+                    madhhab: 'Hanafi',
+                    strings: strings),
+                _MadhhabChip(
+                    label: _madhhabNative('Maliki', strings),
+                    sublabel: _madhhabSub('Maliki', strings),
+                    madhhab: 'Maliki',
+                    strings: strings),
+                _MadhhabChip(
+                    label: _madhhabNative("Shafi'i", strings),
+                    sublabel: _madhhabSub("Shafi'i", strings),
+                    madhhab: "Shafi'i",
+                    strings: strings),
+                _MadhhabChip(
+                    label: _madhhabNative('Hanbali', strings),
+                    sublabel: _madhhabSub('Hanbali', strings),
+                    madhhab: 'Hanbali',
+                    strings: strings),
+                _MadhhabChip(
+                    label: _madhhabNative('Comparative', strings),
+                    sublabel: _madhhabSub('Comparative', strings),
+                    madhhab: 'Comparative',
+                    strings: strings),
               ],
             ),
           ] else ...[
@@ -197,9 +215,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                 child: _CollapsibleSection(
                   icon: msg.isError ? Icons.alt_route : Icons.psychology_outlined,
                   title: msg.isError
-                      ? (strings.lang == 'ur'
-                          ? 'فال بیک نظام کی تفصیلات'
-                          : (strings.lang == 'ar' ? 'مسار استدعاء الخوادم' : 'Fallback Engine Diagnostics'))
+                      ? strings.fallbackDiagnosticsTitle
                       : strings.reasoningPipelineTitle,
                   accent: msg.isError ? Colors.amber : ShiraziColors.secondary,
                   expanded: _isReasoningExpanded,
@@ -229,9 +245,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                       onPressed: () => context.read<ChatProvider>().retryMessage(msg),
                       icon: const Icon(Icons.refresh, size: 16),
                       label: Text(
-                        strings.lang == 'ur'
-                            ? 'دوبارہ کوشش کریں'
-                            : (strings.lang == 'ar' ? 'إعادة المحاولة' : 'Retry'),
+                        strings.retryAction,
                         style: ShiraziTypography.dynamicLabel(
                           strings.lang,
                           fontSize: 12,
@@ -255,9 +269,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                       },
                       icon: const Icon(Icons.key, size: 16, color: ShiraziColors.secondary),
                       label: Text(
-                        strings.lang == 'ur'
-                            ? 'ذاتی API Key'
-                            : (strings.lang == 'ar' ? 'مفتاح شخصي' : 'Personal API Key'),
+                        strings.personalKeyLabel,
                         style: ShiraziTypography.dynamicLabel(
                           strings.lang,
                           fontSize: 12,
@@ -508,16 +520,52 @@ class _ActionIcon extends StatelessWidget {
   }
 }
 
+String _madhhabNative(String m, AppStrings strings) {
+  switch (m) {
+    case 'Maliki':
+      return strings.lang == 'ar' ? 'مالكي' : 'مالکی';
+    case "Shafi'i":
+      return strings.lang == 'ar' ? 'شافعي' : 'شافعی';
+    case 'Hanbali':
+      return strings.lang == 'ar' ? 'حنبلي' : 'حنبلی';
+    case 'Comparative':
+      return strings.lang == 'ar' ? 'الفقه المقارن' : 'فقہ مقارن';
+    default:
+      return strings.lang == 'ar' ? 'حنفي' : 'حنفی';
+  }
+}
+
+String _madhhabSub(String m, AppStrings strings) {
+  switch (m) {
+    case 'Maliki':
+      return strings.lang == 'ur' ? 'مالکی' : strings.lang == 'ar' ? 'مالكي' : 'Maliki';
+    case "Shafi'i":
+      return strings.lang == 'ur' ? 'شافعی' : strings.lang == 'ar' ? 'شافعي' : "Shafi'i";
+    case 'Hanbali':
+      return strings.lang == 'ur' ? 'حنبلی' : strings.lang == 'ar' ? 'حنبلي' : 'Hanbali';
+    case 'Comparative':
+      return strings.lang == 'ur'
+          ? 'فقہ مقارن (تمام مذاہب)'
+          : strings.lang == 'ar'
+              ? 'الفقه المقارن'
+              : 'Comparative (All 4)';
+    default:
+      return strings.lang == 'ur' ? 'حنفی' : strings.lang == 'ar' ? 'حنفي' : 'Hanafi';
+  }
+}
+
 /// Quick-reply chip for madhhab selection.
 class _MadhhabChip extends StatelessWidget {
   final String label;
   final String sublabel;
   final String madhhab;
+  final AppStrings strings;
 
   const _MadhhabChip({
     required this.label,
     required this.sublabel,
     required this.madhhab,
+    required this.strings,
   });
 
   @override
@@ -546,21 +594,20 @@ class _MadhhabChip extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  fontFamily: 'Noto Nastaliq Urdu',
+                style: ShiraziTypography.dynamicHeadline(
+                  strings.lang,
                   fontSize: 16,
-                  color: Color(0xFFD4AF37),
-                  height: 1.4,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFD4AF37),
                 ),
                 textDirection: TextDirection.rtl,
               ),
               Text(
                 sublabel,
-                style: const TextStyle(
-                  fontFamily: 'Outfit',
+                style: ShiraziTypography.dynamicLabel(
+                  strings.lang,
                   fontSize: 10,
-                  color: Color(0xFFB8A060),
-                  letterSpacing: 0.8,
+                  color: const Color(0xFFB8A060),
                 ),
               ),
             ],

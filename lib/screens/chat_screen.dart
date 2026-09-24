@@ -237,8 +237,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 5),
                     Text(
                       online
-                          ? 'Online${chat.serverLatencyMs != null ? ' • ${chat.serverLatencyMs}ms' : ''}'
-                          : 'Connecting…',
+                          ? '${strings.onlineStatus}${chat.serverLatencyMs != null ? ' • ${chat.serverLatencyMs}ms' : ''}'
+                          : strings.connectingStatus,
                       style: ShiraziTypography.dynamicLabel(
                         strings.lang,
                         fontSize: 10,
@@ -276,7 +276,12 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Center(
                 child: Text(
                   _initial(settings.scholarName),
-                  style: ShiraziTypography.headlineSm(color: ShiraziColors.primary),
+                  style: ShiraziTypography.dynamicHeadline(
+                    strings.lang,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: ShiraziColors.primary,
+                  ),
                 ),
               ),
             ),

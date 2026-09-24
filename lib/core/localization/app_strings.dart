@@ -987,5 +987,482 @@ class AppStrings {
       default: return 'Strict Per-User Privacy Enforced by Firestore Rules';
     }
   }
+
+  // --- Profile screen ---
+  String get scholarProfileTitle {
+    switch (lang) {
+      case 'ar': return 'الملف العلمي';
+      case 'ur': return 'علمی پروفائل';
+      default: return 'Scholar Profile';
+    }
+  }
+  String get editProfileAction {
+    switch (lang) {
+      case 'ar': return 'تعديل الملف';
+      case 'ur': return 'پروفائل میں ترمیم';
+      default: return 'Edit profile';
+    }
+  }
+  String get guestScholar {
+    switch (lang) {
+      case 'ar': return 'باحث ضيف';
+      case 'ur': return 'مہمان محقق';
+      default: return 'Guest Scholar';
+    }
+  }
+  String get guestMode {
+    switch (lang) {
+      case 'ar': return 'وضع الضيف';
+      case 'ur': return 'مہمان موڈ';
+      default: return 'Guest Mode';
+    }
+  }
+  String get guestContinueHint {
+    switch (lang) {
+      case 'ar': return 'أنت تتابع كضيف — سجّل الدخول لحفظ ملفك العلمي ومزامنته';
+      case 'ur': return 'آپ مہمان کے طور پر جاری ہیں — پروفائل محفوظ کرنے کے لیے سائن ان کریں';
+      default: return 'You are continuing as a guest — sign in to save and sync your profile';
+    }
+  }
+  String get signInAction {
+    switch (lang) {
+      case 'ar': return 'تسجيل الدخول';
+      case 'ur': return 'سائن ان';
+      default: return 'Sign In';
+    }
+  }
+  String get accountSectionTitle {
+    switch (lang) {
+      case 'ar': return 'الحساب';
+      case 'ur': return 'اکاؤنٹ';
+      default: return 'Account';
+    }
+  }
+  String get nameFieldLabel {
+    switch (lang) {
+      case 'ar': return 'الاسم';
+      case 'ur': return 'نام';
+      default: return 'Name';
+    }
+  }
+  String get fullNameFieldLabel {
+    switch (lang) {
+      case 'ar': return 'الاسم الكامل';
+      case 'ur': return 'پورا نام';
+      default: return 'Full Name';
+    }
+  }
+  String get emailFieldLabel {
+    switch (lang) {
+      case 'ar': return 'البريد';
+      case 'ur': return 'ای میل';
+      default: return 'Email';
+    }
+  }
+  String get roleFieldLabel {
+    switch (lang) {
+      case 'ar': return 'الدور';
+      case 'ur': return 'کردار';
+      default: return 'Role';
+    }
+  }
+  String get scholarshipSectionTitle {
+    switch (lang) {
+      case 'ar': return 'التخصص العلمي';
+      case 'ur': return 'علمی تخصص';
+      default: return 'Scholarship';
+    }
+  }
+  String get madhhabFieldLabel {
+    switch (lang) {
+      case 'ar': return 'المذهب الفقهي';
+      case 'ur': return 'فقہی مسلک';
+      default: return 'Jurisprudential School';
+    }
+  }
+  String get scholarlyRankFieldLabel {
+    switch (lang) {
+      case 'ar': return 'الرتبة العلمية';
+      case 'ur': return 'علمی رتبہ';
+      default: return 'Scholarly Rank';
+    }
+  }
+  String get researchActivityTitle {
+    switch (lang) {
+      case 'ar': return 'النشاط البحثي';
+      case 'ur': return 'تحقیقی سرگرمی';
+      default: return 'Research Activity';
+    }
+  }
+  String get conversationsStatLabel {
+    switch (lang) {
+      case 'ar': return 'المحادثات';
+      case 'ur': return 'گفتگوئیں';
+      default: return 'Conversations';
+    }
+  }
+  String get personalKeysStatLabel {
+    switch (lang) {
+      case 'ar': return 'مفاتيح شخصية';
+      case 'ur': return 'ذاتی کیز';
+      default: return 'Personal Keys';
+    }
+  }
+  String get languageStatLabel {
+    switch (lang) {
+      case 'ar': return 'اللغة';
+      case 'ur': return 'زبان';
+      default: return 'Language';
+    }
+  }
+  String get manageApiKeysAction {
+    switch (lang) {
+      case 'ar': return 'إدارة مفاتيح API';
+      case 'ur': return 'API کیز کا انتظام';
+      default: return 'Manage API Keys';
+    }
+  }
+  String get moreSectionTitle {
+    switch (lang) {
+      case 'ar': return 'المزيد';
+      case 'ur': return 'مزید';
+      default: return 'More';
+    }
+  }
+  String get adminOversightLabel {
+    switch (lang) {
+      case 'ar': return 'لوحة الإشراف البحثي';
+      case 'ur': return 'ایڈمن تحقیقی نگرانی';
+      default: return 'Admin Research Oversight';
+    }
+  }
+  String get manifestoOverviewLabel {
+    switch (lang) {
+      case 'ar': return 'البيان العلمي ونظرة على النظام';
+      case 'ur': return 'علمی منشور و نظام کا تعارف';
+      default: return 'Scholarly Manifesto & Overview';
+    }
+  }
+  String get signedOutSuccess {
+    switch (lang) {
+      case 'ar': return 'تم تسجيل الخروج بنجاح';
+      case 'ur': return 'کامیابی سے سائن آؤٹ ہو گئے';
+      default: return 'Signed out successfully';
+    }
+  }
+  String get signOutAction {
+    switch (lang) {
+      case 'ar': return 'تسجيل الخروج';
+      case 'ur': return 'سائن آؤٹ';
+      default: return 'Sign Out';
+    }
+  }
+  String get cancelAction {
+    switch (lang) {
+      case 'ar': return 'إلغاء';
+      case 'ur': return 'منسوخ';
+      default: return 'Cancel';
+    }
+  }
+  String get saveChangesAction {
+    switch (lang) {
+      case 'ar': return 'حفظ التغييرات';
+      case 'ur': return 'تبدیلیاں محفوظ کریں';
+      default: return 'Save Changes';
+    }
+  }
+  String get profileSavedSuccess {
+    switch (lang) {
+      case 'ar': return 'تم حفظ الملف العلمي بنجاح';
+      case 'ur': return 'پروفائل کامیابی سے محفوظ ہو گیا';
+      default: return 'Profile saved successfully';
+    }
+  }
+  String get genericErrorLabel {
+    switch (lang) {
+      case 'ar': return 'خطأ';
+      case 'ur': return 'خرابی';
+      default: return 'Error';
+    }
+  }
+  String get guestRoleLabel {
+    switch (lang) {
+      case 'ar': return 'ضيف';
+      case 'ur': return 'مہمان';
+      default: return 'Guest';
+    }
+  }
+
+  // --- Chat composer ---
+  String get attachTooltip {
+    switch (lang) {
+      case 'ar': return 'إرفاق مستند';
+      case 'ur': return 'دستاویز منسلک کریں';
+      default: return 'Attach document';
+    }
+  }
+  String get voiceTooltip {
+    switch (lang) {
+      case 'ar': return 'إدخال صوتي';
+      case 'ur': return 'صوتی ان پٹ';
+      default: return 'Voice input';
+    }
+  }
+  String get sendTooltip {
+    switch (lang) {
+      case 'ar': return 'إرسال';
+      case 'ur': return 'بھیجیں';
+      default: return 'Send';
+    }
+  }
+  String get stopTooltip {
+    switch (lang) {
+      case 'ar': return 'إيقاف التوليد';
+      case 'ur': return 'تولید روکیں';
+      default: return 'Stop generating';
+    }
+  }
+  String get attachComingSoon {
+    switch (lang) {
+      case 'ar': return 'إرفاق المستندات قادم قريباً';
+      case 'ur': return 'دستاویز منسلک کرنا جلد آ رہا ہے';
+      default: return 'Document attachment coming soon';
+    }
+  }
+  String get voiceComingSoon {
+    switch (lang) {
+      case 'ar': return 'الإدخال الصوتي قادم قريباً';
+      case 'ur': return 'صوتی ان پٹ جلد آ رہا ہے';
+      default: return 'Voice input coming soon';
+    }
+  }
+  String get jurisprudentialSchoolTitle {
+    switch (lang) {
+      case 'ar': return 'المذهب الفقهي';
+      case 'ur': return 'فقہی مسلک';
+      default: return 'Jurisprudential School';
+    }
+  }
+  String get scholarPersonaTitle {
+    switch (lang) {
+      case 'ar': return 'الشخصية العلمية';
+      case 'ur': return 'علمی شخصیت';
+      default: return 'Scholar Persona';
+    }
+  }
+  String get answerModeTitle {
+    switch (lang) {
+      case 'ar': return 'نمط الإجابة';
+      case 'ur': return 'جواب کا انداز';
+      default: return 'Answer Mode';
+    }
+  }
+  String get modeAuto {
+    switch (lang) {
+      case 'ar': return 'تلقائي';
+      case 'ur': return 'خودکار';
+      default: return 'Auto';
+    }
+  }
+  String get modeQuick {
+    switch (lang) {
+      case 'ar': return 'سريع';
+      case 'ur': return 'فوری';
+      default: return 'Quick';
+    }
+  }
+  String get modeDeep {
+    switch (lang) {
+      case 'ar': return 'بحث عميق';
+      case 'ur': return 'گہری تحقیق';
+      default: return 'Deep';
+    }
+  }
+
+  // --- Chat screen / bubbles ---
+  String get onlineStatus {
+    switch (lang) {
+      case 'ar': return 'متصل';
+      case 'ur': return 'آن لائن';
+      default: return 'Online';
+    }
+  }
+  String get connectingStatus {
+    switch (lang) {
+      case 'ar': return 'جارٍ الاتصال…';
+      case 'ur': return 'رابط ہو رہا ہے…';
+      default: return 'Connecting…';
+    }
+  }
+  String get thinkingStatus {
+    switch (lang) {
+      case 'ar': return 'شيرازي يفكر…';
+      case 'ur': return 'شیرازی سوچ رہا ہے…';
+      default: return 'Shirazi is thinking…';
+    }
+  }
+  String get retryAction {
+    switch (lang) {
+      case 'ar': return 'إعادة المحاولة';
+      case 'ur': return 'دوبارہ کوشش';
+      default: return 'Retry';
+    }
+  }
+  String get personalKeyLabel {
+    switch (lang) {
+      case 'ar': return 'مفتاح شخصي';
+      case 'ur': return 'ذاتی کی';
+      default: return 'Personal API Key';
+    }
+  }
+  String get gatewayLimitLabel {
+    switch (lang) {
+      case 'ar': return 'حد البوابة';
+      case 'ur': return 'گیٹ وے حد';
+      default: return 'Gateway Limit';
+    }
+  }
+  String get cloudInferenceLabel {
+    switch (lang) {
+      case 'ar': return 'استدلال سحابي';
+      case 'ur': return 'کلاؤڈ انفرنس';
+      default: return 'Cloud Inference';
+    }
+  }
+  String get fallbackDiagnosticsTitle {
+    switch (lang) {
+      case 'ar': return 'مسار استدعاء الخوادم';
+      case 'ur': return 'فال بیک انجن کی تشخیص';
+      default: return 'Fallback Engine Diagnostics';
+    }
+  }
+  String sourceLabel(int n) {
+    switch (lang) {
+      case 'ar': return 'المصدر $n';
+      case 'ur': return 'ماخذ $n';
+      default: return 'Source $n';
+    }
+  }
+
+  // --- Welcome screen ---
+  String get welcomeHeadline {
+    switch (lang) {
+      case 'ar': return 'السلام عليكم';
+      case 'ur': return 'السلام علیکم';
+      default: return 'As-salamu alaikum';
+    }
+  }
+  String get welcomeSubheadline {
+    switch (lang) {
+      case 'ar': return 'مساعدك البحثي الإسلامي — إجابات مؤصلة بالأدلة من مكتبة شاملة';
+      case 'ur': return 'آپ کا اسلامی تحقیقی معاون — شاملہ لائبریری سے دلائل کے ساتھ مستند جوابات';
+      default: return 'Your Islamic research companion — evidence-grounded answers from the Shamela library';
+    }
+  }
+  String get chipPrayerTimes {
+    switch (lang) {
+      case 'ar': return 'أوقات الصلاة';
+      case 'ur': return 'نماز کے اوقات';
+      default: return 'Prayer times';
+    }
+  }
+  String get chipFasting {
+    switch (lang) {
+      case 'ar': return 'الصيام';
+      case 'ur': return 'روزہ';
+      default: return 'Fasting';
+    }
+  }
+  String get chipZakat {
+    switch (lang) {
+      case 'ar': return 'الزكاة';
+      case 'ur': return 'زکوٰۃ';
+      default: return 'Zakat';
+    }
+  }
+  String get chipHadithCheck {
+    switch (lang) {
+      case 'ar': return 'تخريج الحديث';
+      case 'ur': return 'حدیث کی تحقیق';
+      default: return 'Hadith check';
+    }
+  }
+  String get promptPrayerTimes {
+    switch (lang) {
+      case 'ar': return 'ما هي أوقات الصلوات الخمس وكيف تُحسب؟';
+      case 'ur': return 'پانچوں نمازوں کے اوقات کیا ہیں اور ان کا حساب کیسے لگایا جاتا ہے؟';
+      default: return 'What are the five daily prayer times and how are they calculated?';
+    }
+  }
+  String get promptFasting {
+    switch (lang) {
+      case 'ar': return 'اشرح فرائض الصيام وسننه';
+      case 'ur': return 'روزے کے فرائض اور سنتوں کی وضاحت کریں';
+      default: return 'Explain the obligations and sunnahs of fasting';
+    }
+  }
+  String get promptZakat {
+    switch (lang) {
+      case 'ar': return 'ما هو نصاب الزكاة وكيف تُحسب على المدخرات؟';
+      case 'ur': return 'زکوٰۃ کا نصاب کیا ہے اور بچت پر اس کا حساب کیسے لگائیں؟';
+      default: return 'What is the nisab of zakat and how is it calculated on savings?';
+    }
+  }
+  String get promptHadith {
+    switch (lang) {
+      case 'ar': return 'تحقق من صحة حديث: «لا ضرر ولا ضرار»';
+      case 'ur': return 'حدیث "لا ضرر ولا ضرار" کی صحت کی تحقیق کریں';
+      default: return 'Verify the authenticity of the hadith "la darar wa la dirar"';
+    }
+  }
+  String get personaMuhaqqiqDesc {
+    switch (lang) {
+      case 'ar': return 'محقق — باحث أكاديمي';
+      case 'ur': return 'محقق — علمی محقق';
+      default: return 'Muhaqqiq — Academic Investigator';
+    }
+  }
+  String get personaMuftiDesc {
+    switch (lang) {
+      case 'ar': return 'مفتٍ — أحكام فقهية واضحة';
+      case 'ur': return 'مفتی — واضح فقہی احکام';
+      default: return 'Mufti — Clear Jurisprudential Rulings';
+    }
+  }
+  String get personaTalibDesc {
+    switch (lang) {
+      case 'ar': return 'طالب العلم — تأسيس تعليمي';
+      case 'ur': return 'طالب علم — تعلیمی بنیادیں';
+      default: return 'Talib al-Ilm — Educational Foundations';
+    }
+  }
+  String get modeAutoDesc {
+    switch (lang) {
+      case 'ar': return 'تلقائي (حسب السؤال)';
+      case 'ur': return 'خودکار (سوال کے مطابق)';
+      default: return 'Auto (decides per question)';
+    }
+  }
+  String get modeQuickDesc {
+    switch (lang) {
+      case 'ar': return 'سريع (إجابة سريعة مع مصادر)';
+      case 'ur': return 'فوری (تیز جواب، حوالوں کے ساتھ)';
+      default: return 'Quick (fast answer with sources)';
+    }
+  }
+  String get modeDeepDesc {
+    switch (lang) {
+      case 'ar': return 'بحث عميق (تحقيق شامل)';
+      case 'ur': return 'گہری تحقیق (مکمل تحقیقی عمل)';
+      default: return 'Deep (full research pipeline)';
+    }
+  }
+  String get exploreTopicsLabel {
+    switch (lang) {
+      case 'ar': return 'استكشف موضوعاً';
+      case 'ur': return 'موضوع دریافت کریں';
+      default: return 'Explore a topic';
+    }
+  }
 }
 

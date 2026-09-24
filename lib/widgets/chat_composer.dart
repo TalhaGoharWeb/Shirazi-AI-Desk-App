@@ -102,7 +102,7 @@ class _ChatComposerState extends State<ChatComposer> {
                   icon: Icons.psychology_outlined,
                   label: _personaLabel(),
                   accent: ShiraziColors.secondary,
-                  onTap: () => _showPersonaSheet(context),
+                  onTap: () => _showPersonaSheet(context, strings),
                 ),
                 const SizedBox(width: 8),
                 _OptionPill(
@@ -123,11 +123,11 @@ class _ChatComposerState extends State<ChatComposer> {
               children: [
                 _RoundIconButton(
                   icon: Icons.add_rounded,
-                  tooltip: 'Attach document',
+                  tooltip: strings.attachTooltip,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Document attachment selected for scholarly review'),
+                      SnackBar(
+                        content: Text(strings.attachComingSoon),
                         duration: Duration(seconds: 2),
                       ),
                     );
@@ -162,11 +162,11 @@ class _ChatComposerState extends State<ChatComposer> {
                 ),
                 _RoundIconButton(
                   icon: Icons.mic_none_rounded,
-                  tooltip: 'Voice input',
+                  tooltip: strings.voiceTooltip,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Scholarly speech recognition active...'),
+                      SnackBar(
+                        content: Text(strings.voiceComingSoon),
                         duration: Duration(seconds: 2),
                       ),
                     );
@@ -174,9 +174,13 @@ class _ChatComposerState extends State<ChatComposer> {
                 ),
                 const SizedBox(width: 4),
                 // Send / Stop key
-                GestureDetector(
-                  onTap: widget.isGenerating ? widget.onStop : (_hasText ? _submit : null),
-                  child: AnimatedContainer(
+                Tooltip(
+                  message: widget.isGenerating
+                      ? strings.stopTooltip
+                      : strings.sendTooltip,
+                  child: GestureDetector(
+                    onTap: widget.isGenerating ? widget.onStop : (_hasText ? _submit : null),
+                    child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 44,
                     height: 44,
@@ -207,6 +211,7 @@ class _ChatComposerState extends State<ChatComposer> {
                     ),
                   ),
                 ),
+                ),
               ],
             ),
           ),
@@ -216,11 +221,23 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   String _madhhabLabel(AppStrings strings) {
-    final m = widget.selectedMadhhab;
-    if (m == 'Comparative') {
-      return strings.lang == 'ur' ? 'فقہ مقارن' : strings.lang == 'ar' ? 'مقارن' : 'Comparative';
+    final m = widget.selectedMadhhab.isEmpty ? 'Hanafi' : widget.selectedMadhhab;
+    return _madhhabName(m, strings);
+  }
+
+  static String _madhhabName(String m, AppStrings strings) {
+    switch (m) {
+      case 'Maliki':
+        return strings.lang == 'ur' ? 'مالکی' : strings.lang == 'ar' ? 'مالكي' : 'Maliki';
+      case "Shafi'i":
+        return strings.lang == 'ur' ? "شافعی" : strings.lang == 'ar' ? 'شافعي' : "Shafi'i";
+      case 'Hanbali':
+        return strings.lang == 'ur' ? 'حنبلی' : strings.lang == 'ar' ? 'حنبلي' : 'Hanbali';
+      case 'Comparative':
+        return strings.lang == 'ur' ? 'فقہ مقارن' : strings.lang == 'ar' ? 'مقارن' : 'Comparative';
+      default:
+        return strings.lang == 'ur' ? 'حنفی' : strings.lang == 'ar' ? 'حنفي' : 'Hanafi';
     }
-    return m.isEmpty ? 'Hanafi' : m;
   }
 
   String _personaLabel() {
@@ -237,47 +254,49 @@ class _ChatComposerState extends State<ChatComposer> {
   String _modeLabel(AppStrings strings) {
     switch (widget.selectedAnswerMode) {
       case 'quick':
-        return strings.lang == 'ur' ? 'فوری' : strings.lang == 'ar' ? 'سريع' : 'Quick';
+        return strings.modeQuick;
       case 'deep':
-        return strings.lang == 'ur' ? 'گہری تحقیق' : strings.lang == 'ar' ? 'بحث عميق' : 'Deep';
+        return strings.modeDeep;
       default:
-        return strings.lang == 'ur' ? 'خودکار' : strings.lang == 'ar' ? 'تلقائي' : 'Auto';
+        return strings.modeAuto;
     }
   }
 
   void _showMadhhabSheet(BuildContext context, AppStrings strings) {
     final options = [
-      ('Hanafi', 'Hanafi', Icons.circle_outlined),
-      ('Maliki', 'Maliki', Icons.circle_outlined),
-      ("Shafi'i", "Shafi'i", Icons.circle_outlined),
-      ('Hanbali', 'Hanbali', Icons.circle_outlined),
+      ('Hanafi', _madhhabName('Hanafi', strings), Icons.circle_outlined),
+      ('Maliki', _madhhabName('Maliki', strings), Icons.circle_outlined),
+      ("Shafi'i", _madhhabName("Shafi'i", strings), Icons.circle_outlined),
+      ('Hanbali', _madhhabName('Hanbali', strings), Icons.circle_outlined),
       (
         'Comparative',
         strings.lang == 'ur'
-            ? 'فقہ مقارن (تمام ۴ مذاہب)'
+            ? '${_madhhabName('Comparative', strings)} (تمام ۴ مذاہب)'
             : strings.lang == 'ar'
-                ? 'الفقه المقارن (المذاهب الأربعة)'
-                : 'Comparative (All 4 Schools)',
+                ? '${_madhhabName('Comparative', strings)} (المذاهب الأربعة)'
+                : '${_madhhabName('Comparative', strings)} (All 4 Schools)',
         Icons.balance
       ),
     ];
     _showOptionSheet(
       context,
-      title: strings.lang == 'ur' ? 'فقہی مسلک' : strings.lang == 'ar' ? 'المذهب الفقهي' : 'Jurisprudential School',
+      strings,
+      title: strings.jurisprudentialSchoolTitle,
       options: options,
       selected: widget.selectedMadhhab.isEmpty ? 'Hanafi' : widget.selectedMadhhab,
       onSelected: widget.onMadhhabChanged,
     );
   }
 
-  void _showPersonaSheet(BuildContext context) {
+  void _showPersonaSheet(BuildContext context, AppStrings strings) {
     _showOptionSheet(
       context,
-      title: 'Scholar Persona',
-      options: const [
-        ('muhaqqiq', 'Muhaqqiq — Academic Investigator', Icons.search_rounded),
-        ('mufti', 'Mufti — Clear Jurisprudential Rulings', Icons.gavel_rounded),
-        ('talib', 'Talib al-Ilm — Educational Foundations', Icons.school_rounded),
+      strings,
+      title: strings.scholarPersonaTitle,
+      options: [
+        ('muhaqqiq', strings.personaMuhaqqiqDesc, Icons.search_rounded),
+        ('mufti', strings.personaMuftiDesc, Icons.gavel_rounded),
+        ('talib', strings.personaTalibDesc, Icons.school_rounded),
       ],
       selected: widget.selectedPersona,
       onSelected: widget.onPersonaChanged,
@@ -287,33 +306,22 @@ class _ChatComposerState extends State<ChatComposer> {
   void _showModeSheet(BuildContext context, AppStrings strings) {
     _showOptionSheet(
       context,
-      title: strings.lang == 'ur' ? 'جواب کا انداز' : strings.lang == 'ar' ? 'نمط الإجابة' : 'Answer Mode',
+      strings,
+      title: strings.answerModeTitle,
       options: [
         (
           'auto',
-          strings.lang == 'ur'
-              ? 'خودکار (سوال کے مطابق)'
-              : strings.lang == 'ar'
-                  ? 'تلقائي (حسب السؤال)'
-                  : 'Auto (decides per question)',
+          strings.modeAutoDesc,
           Icons.auto_awesome_rounded
         ),
         (
           'quick',
-          strings.lang == 'ur'
-              ? 'فوری (تیز جواب، حوالوں کے ساتھ)'
-              : strings.lang == 'ar'
-                  ? 'سريع (إجابة سريعة مع مصادر)'
-                  : 'Quick (fast answer with sources)',
+          strings.modeQuickDesc,
           Icons.bolt_rounded
         ),
         (
           'deep',
-          strings.lang == 'ur'
-              ? 'گہری تحقیق (مکمل تحقیقی عمل)'
-              : strings.lang == 'ar'
-                  ? 'بحث عميق (تحقيق شامل)'
-                  : 'Deep (full research pipeline)',
+          strings.modeDeepDesc,
           Icons.psychology_rounded
         ),
       ],
@@ -323,7 +331,8 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   void _showOptionSheet(
-    BuildContext context, {
+    BuildContext context,
+    AppStrings strings, {
     required String title,
     required List<(String, String, IconData)> options,
     required String selected,
@@ -361,7 +370,12 @@ class _ChatComposerState extends State<ChatComposer> {
             const SizedBox(height: 14),
             Text(
               title,
-              style: ShiraziTypography.headlineSm(color: ShiraziColors.onSurface),
+              style: ShiraziTypography.dynamicHeadline(
+                strings.lang,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: ShiraziColors.onSurface,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -395,7 +409,10 @@ class _ChatComposerState extends State<ChatComposer> {
                         Expanded(
                           child: Text(
                             o.$2,
-                            style: ShiraziTypography.bodyMd(
+                            style: ShiraziTypography.dynamicBody(
+                              strings.lang,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                               color: isSel ? ShiraziColors.primary : ShiraziColors.onSurface,
                             ),
                           ),
