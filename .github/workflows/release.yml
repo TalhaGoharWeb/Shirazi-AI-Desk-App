@@ -9,10 +9,11 @@
 #      api.github.com/repos/TalhaGoharWeb/Shirazi-AI-Desk-App/releases/latest
 #      on launch (Android) and offer the update in-app.
 #
-# Note: the APK is signed with the default debug key (same as a local
-# `flutter build apk`), so it installs cleanly over other builds made
-# the same way. For Play Store distribution, configure a real keystore
-# and add signing secrets instead.
+# Note: the APK is signed with the dedicated Shirazi release keystore
+# (secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEY_ALIAS /
+# ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_PASSWORD). Its SHA-1/SHA-256 are
+# registered in the Firebase console, so Google Sign-In works on release
+# builds and future releases install as updates over each other.
 name: Release APK
 
 on:
@@ -47,8 +48,17 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > /tmp/shirazi-release.keystore
+          echo "ANDROID_KEYSTORE_PATH=/tmp/shirazi-release.keystore" >> "$GITHUB_ENV"
+
       - name: Build release APK
         run: flutter build apk --release
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       - name: Rename APK
         run: |
