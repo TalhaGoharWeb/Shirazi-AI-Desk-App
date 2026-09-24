@@ -6,6 +6,8 @@ import 'package:shirazi_app/services/storage_service.dart';
 import 'package:shirazi_app/services/api_service.dart';
 import 'package:shirazi_app/providers/settings_provider.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -15,6 +17,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      mockSecureStorage();
       storageService = await StorageService.init();
       settingsProvider = SettingsProvider(
         storageService: storageService,
