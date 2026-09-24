@@ -365,15 +365,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       enabledBorder: border,
       focusedBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
-        borderSide: const BorderSide(color: ShiraziColors.primary, width: 1.5),
+        borderSide: BorderSide(color: ShiraziColors.primary, width: 1.5),
       ),
       errorBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
-        borderSide: const BorderSide(color: ShiraziColors.error),
+        borderSide: BorderSide(color: ShiraziColors.error),
       ),
       focusedErrorBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
-        borderSide: const BorderSide(color: ShiraziColors.error, width: 1.5),
+        borderSide: BorderSide(color: ShiraziColors.error, width: 1.5),
       ),
     );
   }
