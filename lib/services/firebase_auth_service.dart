@@ -512,6 +512,10 @@ class FirebaseAuthService {
         await FirebaseAuth.instance.signOut();
       } catch (_) {}
     }
+    // Wipe the in-memory key vault: the next account on this device starts
+    // with an empty vault, and each account's keys remain isolated in its
+    // own UID namespace (locally) and private Firestore vault (cloud).
+    await storageService.setActiveUid(null);
     storageService.logout();
   }
 
@@ -565,8 +569,13 @@ class FirebaseAuthService {
   /// reinstall, or a new device.
   Future<void> mergeApiKeysWithCloud() async {
     if (!_isFirebaseReady) return;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final uid = user.uid;
+    // Switch the local key vault to this account's UID namespace BEFORE
+    // reading any local keys — this is what stops account A's keys from
+    // being merged into account B's private cloud vault on a shared device.
+    await storageService.setActiveUid(uid, isAnonymous: user.isAnonymous);
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')

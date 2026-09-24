@@ -33,6 +33,17 @@ void main() async {
   // into the memory cache before anything reads them.
   await storageService.loadSecureKeys();
   final authService = FirebaseAuthService(storageService: storageService);
+  // Keep the local BYOK vault namespaced by Firebase UID: every sign-in,
+  // sign-out, or OS-restored session swaps the vault before any key is
+  // read, so keys can never leak across accounts on a shared device.
+  // (Sign-in methods additionally switch the vault inside
+  // mergeApiKeysWithCloud; setActiveUid is idempotent.)
+  authService.authStateChanges.listen((user) {
+    storageService.setActiveUid(
+      user?.uid,
+      isAnonymous: user?.isAnonymous ?? true,
+    );
+  });
   final apiService = ApiService(
     baseUrl: storageService.serverUrl,
     // §11: Socket.IO authentication — Firebase ID token attached on connect.

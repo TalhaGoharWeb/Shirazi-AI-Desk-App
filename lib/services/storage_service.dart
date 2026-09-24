@@ -102,9 +102,90 @@ class StorageService {
     }
   }
 
-  static String _secureKeyName(String provider) => 'byok_key_$provider';
+  /// Firebase UID owning the local BYOK vault. Null when signed out —
+  /// while null, no keys are readable and [saveKey] refuses writes.
+  String? _activeUid;
+
+  /// One-time flag: pre-namespace global secure keys have been attributed
+  /// to an account's namespace (or confirmed absent).
+  static const String _keyByokNsMigrated = 'byok_ns_migrated';
+
+  /// Secure-storage entry name for [provider].
+  ///
+  /// Keys are namespaced by Firebase UID (`byok_key_<uid>_<provider>`) so
+  /// one account's keys can never leak into another account's vault on a
+  /// shared device. A null/empty [uid] addresses the legacy pre-namespace
+  /// global slot, used only for the one-time migration below.
+  static String _secureKeyName(String provider, [String? uid]) {
+    final p = provider.toLowerCase().trim();
+    final u = (uid ?? '').trim();
+    return u.isEmpty ? 'byok_key_$p' : 'byok_key_${u}_$p';
+  }
+
+  /// Switches the active local BYOK vault to [uid]'s private namespace.
+  ///
+  /// Call on every sign-in (before any key is read) and with null on
+  /// sign-out. The in-memory cache is wiped synchronously first, so the
+  /// previous account's keys are never visible to the next account; each
+  /// account's keys live under its own UID-namespaced secure-storage
+  /// entries and sync only with its own private Firestore vault.
+  /// Pass [isAnonymous] for guest sign-ins — guest keys get their own
+  /// namespace but never absorb legacy global keys.
+  Future<void> setActiveUid(String? uid, {bool isAnonymous = false}) async {
+    final next = (uid ?? '').trim();
+    if (next == (_activeUid ?? '')) return;
+    _activeUid = next.isEmpty ? null : next;
+    // Wipe synchronously: every provider maps to '' so getKeyForProvider
+    // can never fall through to a stale or legacy read for the wrong
+    // account while the new vault loads.
+    for (final p in _keyProviders) {
+      _keyCache[p] = '';
+    }
+    if (_activeUid != null) {
+      if (!isAnonymous) await _migrateLegacyGlobalKeys();
+      await loadSecureKeys();
+    }
+  }
+
+  /// One-time attribution of pre-namespace global secure keys
+  /// (`byok_key_<provider>`) to the first real (non-anonymous) account that
+  /// signs in after the upgrade. The global slot is deleted afterwards so
+  /// it can never leak into another account's vault.
+  Future<void> _migrateLegacyGlobalKeys() async {
+    final uid = _activeUid;
+    if (uid == null || uid.isEmpty) return;
+    if (_prefs.getBool(_keyByokNsMigrated) == true) return;
+    for (final p in _keyProviders) {
+      String legacyValue = '';
+      try {
+        legacyValue =
+            (await _secureStorage.read(key: _secureKeyName(p))) ?? '';
+      } catch (_) {}
+      if (legacyValue.trim().isEmpty) continue;
+      final namespaced = _secureKeyName(p, uid);
+      try {
+        final existing =
+            (await _secureStorage.read(key: namespaced)) ?? '';
+        if (existing.trim().isEmpty) {
+          await _secureStorage.write(
+              key: namespaced, value: legacyValue.trim());
+        }
+        // The global slot records no owner; once a real account has
+        // claimed this device, remove it so it can never be misattributed.
+        await _secureStorage.delete(key: _secureKeyName(p));
+        debugPrint(
+            '[StorageService] Migrated pre-namespace BYOK key for $p.');
+      } catch (e) {
+        debugPrint(
+            '[StorageService] Legacy key migration failed for $p: $e');
+      }
+    }
+    await _prefs.setBool(_keyByokNsMigrated, true);
+  }
 
   /// Loads BYOK keys from platform secure storage into the memory cache.
+  /// Reads the active UID's namespace (see [setActiveUid]); with no active
+  /// UID (startup, before auth resolves) it reads the legacy global slot.
   /// Migrates any legacy SharedPreferences values (plaintext or old XOR
   /// `enc_` obfuscation) into secure storage exactly once, then deletes them.
   /// Call once at startup before any key is read.
@@ -112,7 +193,9 @@ class StorageService {
     for (final p in _keyProviders) {
       String value = '';
       try {
-        value = (await _secureStorage.read(key: _secureKeyName(p))) ?? '';
+        value =
+            (await _secureStorage.read(key: _secureKeyName(p, _activeUid))) ??
+                '';
       } catch (e) {
         debugPrint('[StorageService] Secure storage read failed for $p: $e');
       }
@@ -126,7 +209,8 @@ class StorageService {
             // Otherwise a failed migration would destroy the only copy.
             var writeOk = false;
             try {
-              await _secureStorage.write(key: _secureKeyName(p), value: migrated);
+              await _secureStorage.write(
+                  key: _secureKeyName(p, _activeUid), value: migrated);
               writeOk = true;
             } catch (e) {
               debugPrint('[StorageService] Secure storage write failed for $p: $e');
@@ -167,14 +251,25 @@ class StorageService {
   /// Saves [value] for [provider] in secure storage. Returns `true` only when
   /// the write actually landed in platform secure storage. Updates the
   /// memory cache on success and records [lastKeyWriteError] on failure.
+  ///
+  /// Writes require an active signed-in account ([setActiveUid]): keys are
+  /// always stored in the account's UID namespace, so refusing here (rather
+  /// than falling back to a shared global slot) is what guarantees one
+  /// account's keys can never leak into another's vault.
   Future<bool> saveKey(String provider, String value) async {
     final p = provider.toLowerCase().trim();
     final clean = value.trim();
+    final uid = _activeUid;
+    if (uid == null || uid.isEmpty) {
+      lastKeyWriteError = 'Not signed in — key was not saved.';
+      debugPrint('[StorageService] saveKey refused for $p: no active account.');
+      return false;
+    }
     try {
       if (clean.isEmpty) {
-        await _secureStorage.delete(key: _secureKeyName(p));
+        await _secureStorage.delete(key: _secureKeyName(p, uid));
       } else {
-        await _secureStorage.write(key: _secureKeyName(p), value: clean);
+        await _secureStorage.write(key: _secureKeyName(p, uid), value: clean);
       }
     } catch (e) {
       lastKeyWriteError = 'Secure device storage write failed for $p: $e';

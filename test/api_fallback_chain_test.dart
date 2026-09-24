@@ -20,6 +20,9 @@ void main() {
       mockSecureStorage();
       final prefs = await SharedPreferences.getInstance();
       storage = StorageService(prefs);
+      // BYOK keys are namespaced by account UID; the test vault needs an
+      // owner, mirroring setActiveUid on sign-in in production.
+      await storage.setActiveUid('test-uid');
       api = ApiService();
       settings = SettingsProvider(storageService: storage, apiService: api);
     });
@@ -86,6 +89,35 @@ void main() {
       await storage.saveKey('gemini', '');
       expect(storage.geminiKey, '');
       expect(storage.getActiveFallbackChain().contains('gemini'), isFalse);
+    });
+
+    test('Keys are isolated per account UID and wiped on sign-out', () async {
+      // Account A saves a key in its own namespace.
+      await storage.setActiveUid('uid-A');
+      expect(await storage.saveKey('gemini', 'A-key'), isTrue);
+      expect(storage.getKeyForProvider('gemini'), 'A-key');
+
+      // Sign out: the in-memory vault is wiped synchronously.
+      await storage.setActiveUid(null);
+      expect(storage.getKeyForProvider('gemini'), '');
+
+      // Account B on the same device sees none of A's keys.
+      await storage.setActiveUid('uid-B');
+      expect(storage.getKeyForProvider('gemini'), '');
+
+      // B's own keys land in B's namespace only.
+      expect(await storage.saveKey('gemini', 'B-key'), isTrue);
+      expect(storage.getKeyForProvider('gemini'), 'B-key');
+
+      // Back to A: A's keys are restored, B's are invisible.
+      await storage.setActiveUid('uid-A');
+      expect(storage.getKeyForProvider('gemini'), 'A-key');
+    });
+
+    test('saveKey refuses writes with no signed-in account', () async {
+      await storage.setActiveUid(null);
+      expect(await storage.saveKey('gemini', 'no-owner-key'), isFalse);
+      expect(storage.lastKeyWriteError, isNotNull);
     });
 
     test('Masked key protects UI visibility while showing partial identity', () async {
