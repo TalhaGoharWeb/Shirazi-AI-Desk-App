@@ -396,7 +396,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           backgroundColor: ShiraziColors.primary,
                           foregroundColor: ShiraziColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
+                          shape: const RoundedRectangleBorder
                             borderRadius: ShiraziRadius.roundedLg,
                           ),
                           elevation: 4,
@@ -563,7 +563,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: ShiraziColors.surfaceContainerHigh,
               borderRadius: ShiraziRadius.roundedMd,
             ),
@@ -619,7 +619,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   children: chips.map((c) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: ShiraziColors.surfaceContainerHighest,
                         borderRadius: ShiraziRadius.roundedFull,
                       ),

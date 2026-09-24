@@ -206,7 +206,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       backgroundColor: ShiraziColors.primary,
                       foregroundColor: ShiraziColors.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
+                      shape: const RoundedRectangleBorder
                         borderRadius: ShiraziRadius.roundedLg,
                       ),
                       elevation: 4,
@@ -314,7 +314,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               backgroundColor: ShiraziColors.primary,
               foregroundColor: ShiraziColors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
+              shape: const RoundedRectangleBorder
                 borderRadius: ShiraziRadius.roundedLg,
               ),
             ),
@@ -363,15 +363,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: border,
       enabledBorder: border,
-      focusedBorder: OutlineInputBorder(
+      focusedBorder: const OutlineInputBorder
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: const BorderSide(color: ShiraziColors.primary, width: 1.5),
       ),
-      errorBorder: OutlineInputBorder(
+      errorBorder: const OutlineInputBorder
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: const BorderSide(color: ShiraziColors.error),
       ),
-      focusedErrorBorder: OutlineInputBorder(
+      focusedErrorBorder: const OutlineInputBorder
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: const BorderSide(color: ShiraziColors.error, width: 1.5),
       ),
