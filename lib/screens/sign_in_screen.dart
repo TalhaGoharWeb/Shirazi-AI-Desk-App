@@ -341,7 +341,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 backgroundColor: ShiraziColors.primary,
                                 foregroundColor: ShiraziColors.onPrimary,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: const RoundedRectangleBorder
+                                shape: const RoundedRectangleBorder(
                                   borderRadius: ShiraziRadius.roundedLg,
                                 ),
                                 elevation: 4,
@@ -400,7 +400,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           side: BorderSide(
                             color: ShiraziColors.outlineVariant.withValues(alpha: 0.5),
                           ),
-                          shape: const RoundedRectangleBorder
+                          shape: const RoundedRectangleBorder(
                             borderRadius: ShiraziRadius.roundedLg,
                           ),
                         ),
@@ -488,15 +488,15 @@ class _SignInScreenState extends State<SignInScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: border,
       enabledBorder: border,
-      focusedBorder: const OutlineInputBorder
+      focusedBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: const BorderSide(color: ShiraziColors.primary, width: 1.5),
       ),
-      errorBorder: const OutlineInputBorder
+      errorBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: const BorderSide(color: ShiraziColors.error),
       ),
-      focusedErrorBorder: const OutlineInputBorder
+      focusedErrorBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: const BorderSide(color: ShiraziColors.error, width: 1.5),
       ),

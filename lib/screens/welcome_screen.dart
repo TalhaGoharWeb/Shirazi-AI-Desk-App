@@ -396,7 +396,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           backgroundColor: ShiraziColors.primary,
                           foregroundColor: ShiraziColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: const RoundedRectangleBorder
+                          shape: const RoundedRectangleBorder(
                             borderRadius: ShiraziRadius.roundedLg,
                           ),
                           elevation: 4,
