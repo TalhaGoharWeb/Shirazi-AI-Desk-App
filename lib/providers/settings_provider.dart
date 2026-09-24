@@ -191,6 +191,13 @@ class SettingsProvider with ChangeNotifier {
   String get scholarName => storageService.scholarName;
   String get scholarEmail => storageService.scholarEmail;
   String get scholarRole => storageService.scholarRole;
+  String get scholarMadhhab => storageService.scholarMadhhab;
+  String get scholarRank => storageService.scholarRank;
+
+  /// Refreshes listeners after the profile was updated through
+  /// [FirebaseAuthService.updateScholarProfile], which writes local storage
+  /// itself before returning.
+  void refreshProfile() => notifyListeners();
 
   void login({required String email, String? name, String? role}) {
     storageService.login(email: email, name: name, role: role);

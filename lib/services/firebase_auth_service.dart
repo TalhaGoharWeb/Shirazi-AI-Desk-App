@@ -157,6 +157,8 @@ class FirebaseAuthService {
             email: email.trim(),
             name: scholarName,
             role: isAdminRole ? 'Administrator' : scholarlyRank,
+            madhhab: madhhab,
+            rank: scholarlyRank,
           );
 
           return {
@@ -215,6 +217,8 @@ class FirebaseAuthService {
           String role = isSuperAdminEmail
               ? 'Super Administrator'
               : (isAdminEmail ? 'Administrator' : 'Mufti / Darul Ifta');
+          String? profileMadhhab;
+          String? profileRank;
 
           // Fetch scholar profile metadata from Firestore users collection
           try {
@@ -234,6 +238,8 @@ class FirebaseAuthService {
               } else {
                 role = data['scholarlyRank'] ?? role;
               }
+              profileMadhhab = data['madhhab'] as String?;
+              profileRank = data['scholarlyRank'] as String?;
 
               // Update last login timestamp
               await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
@@ -258,6 +264,8 @@ class FirebaseAuthService {
             email: user.email ?? email.trim(),
             name: name,
             role: role,
+            madhhab: profileMadhhab,
+            rank: profileRank,
           );
 
           return {
@@ -397,6 +405,81 @@ class FirebaseAuthService {
       } catch (_) {}
     }
     storageService.logout();
+  }
+
+  /// Update the authenticated scholar's profile (name, madhhab, rank).
+  ///
+  /// Writes through to Firebase Auth (display name) and Firestore
+  /// (`users` + legacy `scholars` docs, merged), then updates local storage
+  /// so the UI reflects the change immediately. Returns a result map with
+  /// `success` and `message`. Email is intentionally not editable here.
+  Future<Map<String, dynamic>> updateScholarProfile({
+    required String scholarName,
+    required String madhhab,
+    required String scholarlyRank,
+  }) async {
+    final cleanName = scholarName.trim();
+    if (cleanName.isEmpty) {
+      return {
+        'success': false,
+        'code': 'invalid-name',
+        'message': 'Please enter your name.',
+      };
+    }
+
+    if (_isFirebaseReady) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          return {
+            'success': false,
+            'code': 'not-signed-in',
+            'message': 'You are not signed in. Please sign in to update your profile.',
+          };
+        }
+
+        await user.updateDisplayName(cleanName);
+
+        final updates = {
+          'displayName': cleanName,
+          'scholarName': cleanName,
+          'madhhab': madhhab,
+          'scholarlyRank': scholarlyRank,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set(updates, SetOptions(merge: true));
+        await FirebaseFirestore.instance
+            .collection('scholars')
+            .doc(user.uid)
+            .set(updates, SetOptions(merge: true));
+      } on FirebaseAuthException catch (e) {
+        return {
+          'success': false,
+          'code': e.code,
+          'message': _parseAuthErrorMessage(e.code, e.message),
+        };
+      } catch (e) {
+        return {
+          'success': false,
+          'code': 'update-failed',
+          'message': 'Profile update failed: ${e.toString()}',
+        };
+      }
+    }
+
+    storageService.scholarName = cleanName;
+    storageService.scholarMadhhab = madhhab;
+    storageService.scholarRank = scholarlyRank;
+    storageService.scholarRole = scholarlyRank;
+
+    return {
+      'success': true,
+      'message': 'Profile updated successfully.',
+    };
   }
 
   static String _parseAuthErrorMessage(String code, String? fallback) {

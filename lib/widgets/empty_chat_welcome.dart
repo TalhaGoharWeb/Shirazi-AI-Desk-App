@@ -4,7 +4,9 @@ import '../core/theme/shirazi_typography.dart';
 import '../core/localization/app_strings.dart';
 import 'shirazi_emblem.dart';
 
-class EmptyChatWelcome extends StatelessWidget {
+/// Conversational home state: glowing emblem, greeting, quick suggestion
+/// chips and curated prompt cards.
+class EmptyChatWelcome extends StatefulWidget {
   final ValueChanged<String> onPromptSelected;
 
   const EmptyChatWelcome({
@@ -13,60 +15,149 @@ class EmptyChatWelcome extends StatelessWidget {
   });
 
   @override
+  State<EmptyChatWelcome> createState() => _EmptyChatWelcomeState();
+}
+
+class _EmptyChatWelcomeState extends State<EmptyChatWelcome>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Emblem & Header
-          Container(
-            width: 56,
-            height: 56,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: ShiraziColors.surfaceContainerLow,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0x66D4AF37), width: 1.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x33D4AF37),
-                  blurRadius: 16,
-                  spreadRadius: 2,
+          // Glowing emblem
+          AnimatedBuilder(
+            animation: _pulse,
+            builder: (context, child) {
+              final t = _pulse.value;
+              return Container(
+                width: 84,
+                height: 84,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: ShiraziColors.surfaceContainerLow,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: ShiraziColors.primary.withValues(alpha: 0.4 + 0.3 * t),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ShiraziColors.primary.withValues(alpha: 0.18 + 0.14 * t),
+                      blurRadius: 24 + 12 * t,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Center(child: ShiraziEmblem(size: 38)),
+                child: const Center(child: ShiraziEmblem(size: 56)),
+              );
+            },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           Text(
-            strings.brandTitle,
+            _greeting(strings),
             style: ShiraziTypography.dynamicHeadline(
               strings.lang,
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: ShiraziColors.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
-          Text(
-            strings.welcomeMottoQuote,
-            style: ShiraziTypography.dynamicBody(
-              strings.lang,
-              fontSize: 14,
-              color: ShiraziColors.primaryFixedDim,
-              height: 1.6,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              strings.welcomeMottoQuote,
+              style: ShiraziTypography.dynamicBody(
+                strings.lang,
+                fontSize: 14,
+                color: ShiraziColors.primaryFixedDim,
+                height: 1.7,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
-          // Curated Prompt Starters Grid
+          // Quick suggestion chips
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              children: [
+                _SuggestionChip(
+                  label: strings.lang == 'ur'
+                      ? 'نماز کے اوقات'
+                      : strings.lang == 'ar'
+                          ? 'أوقات الصلاة'
+                          : 'Prayer times',
+                  icon: Icons.schedule_rounded,
+                  onTap: () => widget.onPromptSelected(
+                    strings.lang == 'ur'
+                        ? 'نماز کے اوقات کا شرعی حکم کیا ہے؟'
+                        : strings.lang == 'ar'
+                            ? 'ما حكم أوقات الصلاة الشرعية؟'
+                            : 'What are the prescribed times for the five daily prayers?',
+                  ),
+                ),
+                _SuggestionChip(
+                  label: strings.lang == 'ur' ? 'روزہ' : strings.lang == 'ar' ? 'الصيام' : 'Fasting',
+                  icon: Icons.nights_stay_outlined,
+                  onTap: () => widget.onPromptSelected(
+                    strings.lang == 'ur'
+                        ? 'روزے کے فرائض و سنن بیان کریں'
+                        : strings.lang == 'ar'
+                            ? 'اذكر فرائض الصيام وسننه'
+                            : 'Explain the obligations and sunnahs of fasting',
+                  ),
+                ),
+                _SuggestionChip(
+                  label: strings.lang == 'ur' ? 'زکوٰۃ' : strings.lang == 'ar' ? 'الزكاة' : 'Zakat',
+                  icon: Icons.volunteer_activism_outlined,
+                  onTap: () => widget.onPromptSelected(
+                    strings.lang == 'ur'
+                        ? 'زکوٰۃ کن لوگوں پر فرض ہے؟'
+                        : strings.lang == 'ar'
+                            ? 'على من تجب الزكاة؟'
+                            : 'On whom is zakat obligatory?',
+                  ),
+                ),
+                _SuggestionChip(
+                  label: strings.lang == 'ur' ? 'حدیث کی تحقیق' : strings.lang == 'ar' ? 'تخريج الحديث' : 'Hadith check',
+                  icon: Icons.verified_outlined,
+                  onTap: () => widget.onPromptSelected(strings.promptStarter4Desc),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Curated prompt cards
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 550;
@@ -111,19 +202,31 @@ class EmptyChatWelcome extends StatelessWidget {
                   childAspectRatio: 2.4,
                   children: promptCards,
                 );
-              } else {
-                return Column(
-                  children: promptCards.map((c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: c,
-                  )).toList(),
-                );
               }
+              return Column(
+                children: promptCards
+                    .map((c) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: c,
+                        ))
+                    .toList(),
+              );
             },
           ),
         ],
       ),
     );
+  }
+
+  String _greeting(AppStrings strings) {
+    switch (strings.lang) {
+      case 'ar':
+        return 'السلام عليكم، كيف أخدمك؟';
+      case 'ur':
+        return 'السلام علیکم، میں آپ کی کیا مدد کر سکتا ہوں؟';
+      default:
+        return 'Peace be upon you — how may I help?';
+    }
   }
 
   Widget _buildPromptCard(
@@ -134,34 +237,30 @@ class EmptyChatWelcome extends StatelessWidget {
     required AppStrings strings,
   }) {
     return InkWell(
-      onTap: () => onPromptSelected(desc),
-      borderRadius: BorderRadius.circular(12),
+      onTap: () => widget.onPromptSelected(desc),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: ShiraziColors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0x334D4635), width: 0.8),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: ShiraziColors.outlineVariant.withValues(alpha: 0.35),
+            width: 0.8,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: ShiraziColors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8),
+                color: ShiraziColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, size: 18, color: ShiraziColors.primary),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +277,7 @@ class EmptyChatWelcome extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     desc,
                     style: ShiraziTypography.dynamicBody(
@@ -194,6 +293,56 @@ class EmptyChatWelcome extends StatelessWidget {
             ),
             const Icon(Icons.arrow_forward_ios, size: 12, color: ShiraziColors.outline),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestionChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SuggestionChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: ShiraziColors.surfaceContainerHigh.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: ShiraziColors.primary.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: ShiraziColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: ShiraziTypography.dynamicLabel(
+                  strings.lang,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ShiraziColors.onSurface,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

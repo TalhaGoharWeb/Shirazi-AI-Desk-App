@@ -43,6 +43,8 @@ class StorageService {
   static const String _keyScholarName = 'auth_scholar_name';
   static const String _keyScholarEmail = 'auth_scholar_email';
   static const String _keyScholarRole = 'auth_scholar_role';
+  static const String _keyScholarMadhhab = 'auth_scholar_madhhab';
+  static const String _keyScholarRank = 'auth_scholar_rank';
   static const String _keyGuestUid = 'auth_guest_uid';
 
   final SharedPreferences _prefs;
@@ -364,20 +366,28 @@ class StorageService {
   bool get isAuthenticated => _prefs.getBool(_keyAuthStatus) ?? false;
   set isAuthenticated(bool value) => _prefs.setBool(_keyAuthStatus, value);
 
-  String get scholarName => _prefs.getString(_keyScholarName) ?? 'د. أحمد فاروق (Dr. Ahmad Farooq)';
+  String get scholarName => _prefs.getString(_keyScholarName) ?? 'Guest Scholar';
   set scholarName(String value) => _prefs.setString(_keyScholarName, value);
 
-  String get scholarEmail => _prefs.getString(_keyScholarEmail) ?? 'scholar@darulifta.edu';
+  String get scholarEmail => _prefs.getString(_keyScholarEmail) ?? '';
   set scholarEmail(String value) => _prefs.setString(_keyScholarEmail, value);
 
-  String get scholarRole => _prefs.getString(_keyScholarRole) ?? 'Mufti / Darul Ifta';
+  String get scholarRole => _prefs.getString(_keyScholarRole) ?? 'Guest';
   set scholarRole(String value) => _prefs.setString(_keyScholarRole, value);
 
-  void login({required String email, String? name, String? role}) {
+  String get scholarMadhhab => _prefs.getString(_keyScholarMadhhab) ?? 'Hanafi';
+  set scholarMadhhab(String value) => _prefs.setString(_keyScholarMadhhab, value);
+
+  String get scholarRank => _prefs.getString(_keyScholarRank) ?? 'Talib al-Ilm';
+  set scholarRank(String value) => _prefs.setString(_keyScholarRank, value);
+
+  void login({required String email, String? name, String? role, String? madhhab, String? rank}) {
     isAuthenticated = true;
     scholarEmail = email;
     if (name != null && name.isNotEmpty) scholarName = name;
     if (role != null && role.isNotEmpty) scholarRole = role;
+    if (madhhab != null && madhhab.isNotEmpty) scholarMadhhab = madhhab;
+    if (rank != null && rank.isNotEmpty) scholarRank = rank;
   }
 
   void logout() {

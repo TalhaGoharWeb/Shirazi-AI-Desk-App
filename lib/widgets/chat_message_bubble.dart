@@ -11,6 +11,12 @@ import 'shirazi_emblem.dart';
 import 'reasoning_stepper.dart';
 import 'scholarly_markdown_view.dart';
 
+/// Chat-style message rendering for the Shirazi conversational interface.
+///
+/// - User turns: compact gold-tinted bubble, end-aligned (RTL aware).
+/// - Assistant turns: emblem avatar + name header, full-width clean content
+///   column (no heavy card), collapsible reasoning & citations, slim action
+///   footer.
 class ChatMessageBubble extends StatefulWidget {
   final ShiraziChatMessage message;
   final bool isLatestAssistant;
@@ -31,540 +37,371 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppStrings.of(context);
     final msg = widget.message;
-
-    if (msg.isUser) {
-      return _buildUserBubble(context, msg, strings);
-    } else {
-      return _buildAssistantBubble(context, msg, strings);
-    }
+    return msg.isUser ? _buildUserBubble(context, msg) : _buildAssistantBubble(context, msg);
   }
 
-  // 1. User Query Bubble
-  Widget _buildUserBubble(
-    BuildContext context,
-    ShiraziChatMessage msg,
-    AppStrings strings,
-  ) {
+  // ── User turn ──────────────────────────────────────────────────────────
+  Widget _buildUserBubble(BuildContext context, ShiraziChatMessage msg) {
+    final strings = AppStrings.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.fromLTRB(48, 6, 12, 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Flexible(
             child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.82,
-              ),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: ShiraziColors.surfaceContainerHigh,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3A2F10), Color(0xFF2A2410)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                  topRight: Radius.circular(4),
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(6),
                 ),
                 border: Border.all(
-                  color: ShiraziColors.primary.withValues(alpha: 0.35),
+                  color: ShiraziColors.primary.withValues(alpha: 0.28),
                   width: 0.8,
                 ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   ScholarlyMarkdownView(content: msg.content),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatTime(msg.timestamp),
-                        style: ShiraziTypography.dynamicLabel(
-                          strings.lang,
-                          fontSize: 10,
-                          color: ShiraziColors.outline,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      InkWell(
-                        onTap: () {
-                          Clipboard.setData(ClipboardData(text: msg.content));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(strings.copiedNotification),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        child: const Icon(Icons.copy_rounded, size: 13, color: ShiraziColors.outline),
-                      ),
-                    ],
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatTime(msg.timestamp),
+                    style: ShiraziTypography.dynamicLabel(
+                      strings.lang,
+                      fontSize: 10,
+                      color: ShiraziColors.outline.withValues(alpha: 0.8),
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: ShiraziColors.surfaceContainerHigh,
-            child: const Icon(Icons.person, size: 16, color: ShiraziColors.primary),
           ),
         ],
       ),
     );
   }
 
-  // 2. Shirazi AI Scholarly Assistant Bubble
-  Widget _buildAssistantBubble(
-    BuildContext context,
-    ShiraziChatMessage msg,
-    AppStrings strings,
-  ) {
+  // ── Assistant turn ─────────────────────────────────────────────────────
+  Widget _buildAssistantBubble(BuildContext context, ShiraziChatMessage msg) {
+    final strings = AppStrings.of(context);
+    final isRtl = strings.isRtl;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Shirazi Emblem Avatar
-          Container(
-            width: 32,
-            height: 32,
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: ShiraziColors.surfaceContainerLowest,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0x66D4AF37), width: 1.2),
-              boxShadow: const [
-                BoxShadow(color: Color(0x33D4AF37), blurRadius: 6),
+          // Header: emblem avatar + name + provider chip + latency
+          Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: ShiraziColors.surfaceContainerLowest,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: ShiraziColors.primary.withValues(alpha: 0.5),
+                    width: 1.2,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x33D4AF37), blurRadius: 8),
+                  ],
+                ),
+                child: const Center(child: ShiraziEmblem(size: 20)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'SHIRAZI',
+                style: ShiraziTypography.dynamicHeadline(
+                  strings.lang,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: msg.isError ? Colors.amber : ShiraziColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: ShiraziColors.surfaceContainerHigh.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    msg.isError
+                        ? (isRtl
+                            ? (strings.lang == 'ur' ? 'سروس دستیابی' : 'سعة الخادم')
+                            : 'Gateway Limit')
+                        : (msg.byokProvider ?? 'Cloud Inference'),
+                    style: ShiraziTypography.dynamicLabel(
+                      strings.lang,
+                      fontSize: 10,
+                      color: msg.isError ? Colors.amber : ShiraziColors.secondaryFixedDim,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (msg.latencyMs != null && !msg.isError)
+                Text(
+                  '${msg.latencyMs}ms',
+                  style: ShiraziTypography.dynamicLabel(
+                    strings.lang,
+                    fontSize: 10,
+                    color: ShiraziColors.outline,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Body
+          if (msg.messageType == ShiraziMessageType.madhhabClarification) ...[
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 38),
+              child: ScholarlyMarkdownView(content: msg.content),
+            ),
+            const SizedBox(height: 12),
+            const Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _MadhhabChip(label: 'حنفی', sublabel: 'Hanafi', madhhab: 'Hanafi'),
+                _MadhhabChip(label: 'مالکی', sublabel: 'Maliki', madhhab: 'Maliki'),
+                _MadhhabChip(label: 'شافعی', sublabel: "Shafi'i", madhhab: "Shafi'i"),
+                _MadhhabChip(label: 'حنبلی', sublabel: 'Hanbali', madhhab: 'Hanbali'),
+                _MadhhabChip(label: 'فقہ مقارن', sublabel: 'Comparative (All 4)', madhhab: 'Comparative'),
               ],
             ),
-            child: const Center(child: ShiraziEmblem(size: 22)),
-          ),
-          const SizedBox(width: 10),
-
-          // Main Response Enclave
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: ShiraziColors.surfaceContainerLow,
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                  topLeft: Radius.circular(4),
+          ] else ...[
+            // Collapsible reasoning trace
+            if (msg.reasoningSteps.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 38),
+                child: _CollapsibleSection(
+                  icon: msg.isError ? Icons.alt_route : Icons.psychology_outlined,
+                  title: msg.isError
+                      ? (strings.lang == 'ur'
+                          ? 'فال بیک نظام کی تفصیلات'
+                          : (strings.lang == 'ar' ? 'مسار استدعاء الخوادم' : 'Fallback Engine Diagnostics'))
+                      : strings.reasoningPipelineTitle,
+                  accent: msg.isError ? Colors.amber : ShiraziColors.secondary,
+                  expanded: _isReasoningExpanded,
+                  onToggle: () => setState(() => _isReasoningExpanded = !_isReasoningExpanded),
+                  child: ReasoningStepper(steps: msg.reasoningSteps),
                 ),
-                border: Border.all(
-                  color: const Color(0x334D4635),
-                  width: 0.8,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
-                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Response Header: Brand, Latency, BYOK Provider
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'SHIRAZI AI',
-                            style: ShiraziTypography.dynamicHeadline(
-                              strings.lang,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: msg.isError ? Colors.amber : ShiraziColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              const SizedBox(height: 10),
+            ],
+
+            // Main content — clean, full width, no card
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 38),
+              child: ScholarlyMarkdownView(content: msg.content),
+            ),
+
+            // Error recovery actions
+            if (msg.isError && msg.canRetry) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 38),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => context.read<ChatProvider>().retryMessage(msg),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: Text(
+                        strings.lang == 'ur'
+                            ? 'دوبارہ کوشش کریں'
+                            : (strings.lang == 'ar' ? 'إعادة المحاولة' : 'Retry'),
+                        style: ShiraziTypography.dynamicLabel(
+                          strings.lang,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: ShiraziColors.onPrimary,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ShiraziColors.primary,
+                        foregroundColor: ShiraziColors.onPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SettingsByokScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.key, size: 16, color: ShiraziColors.secondary),
+                      label: Text(
+                        strings.lang == 'ur'
+                            ? 'ذاتی API Key'
+                            : (strings.lang == 'ar' ? 'مفتاح شخصي' : 'Personal API Key'),
+                        style: ShiraziTypography.dynamicLabel(
+                          strings.lang,
+                          fontSize: 12,
+                          color: ShiraziColors.onSurface,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: ShiraziColors.outlineVariant.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Urdu annotation note
+            if (msg.urduAnnotation != null && msg.urduAnnotation!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 38),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: ShiraziColors.surfaceContainerLowest.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: ShiraziColors.primary.withValues(alpha: 0.2),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    msg.urduAnnotation!,
+                    style: ShiraziTypography.urdu(
+                      fontSize: 14,
+                      color: ShiraziColors.primaryFixedDim,
+                      height: 1.8,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ),
+            ],
+
+            // Citations
+            if (msg.citations.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 38),
+                child: _CollapsibleSection(
+                  icon: Icons.menu_book_rounded,
+                  title: '${strings.citationsTitle} (${msg.citations.length})',
+                  accent: ShiraziColors.primary,
+                  expanded: _isCitationsExpanded,
+                  onToggle: () => setState(() => _isCitationsExpanded = !_isCitationsExpanded),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: msg.citations
+                        .map(
+                          (c) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: msg.isError
-                                  ? Colors.amber.withOpacity(0.15)
-                                  : ShiraziColors.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(4),
-                              border: msg.isError
-                                  ? Border.all(color: Colors.amber.withOpacity(0.4), width: 0.8)
-                                  : null,
+                              color: ShiraziColors.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: ShiraziColors.outlineVariant.withValues(alpha: 0.4),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (msg.isError) ...[
-                                  const Icon(Icons.info_outline, size: 10, color: Colors.amber),
-                                  const SizedBox(width: 4),
-                                ],
+                                const Icon(Icons.bookmark_border, size: 12, color: ShiraziColors.secondary),
+                                const SizedBox(width: 4),
                                 Text(
-                                  msg.isError
-                                      ? (strings.lang == 'ur'
-                                          ? 'سروس دستیابی'
-                                          : (strings.lang == 'ar' ? 'سعة الخادم' : 'Gateway Limit'))
-                                      : (msg.byokProvider ?? 'Cloud Inference'),
+                                  c,
                                   style: ShiraziTypography.dynamicLabel(
                                     strings.lang,
-                                    fontSize: 9,
-                                    color: msg.isError ? Colors.amber : ShiraziColors.secondaryFixedDim,
+                                    fontSize: 11,
+                                    color: ShiraziColors.onSurfaceVariant,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                      if (msg.latencyMs != null && !msg.isError)
-                        Text(
-                          '${msg.latencyMs}ms',
-                          style: ShiraziTypography.dynamicLabel(
-                            strings.lang,
-                            fontSize: 10,
-                            color: ShiraziColors.outline,
-                          ),
-                        ),
-                    ],
+                        )
+                        .toList(),
                   ),
-                  const SizedBox(height: 12),
-
-                  // ── Madhhab Clarification Chips ──────────────────────────
-                  // Rendered when Shirazi needs the user to specify their
-                  // jurisprudential school before answering (Rule 2).
-                  if (msg.messageType == ShiraziMessageType.madhhabClarification) ...[
-                    ScholarlyMarkdownView(
-                      content: msg.content,
-                    ),
-                    const SizedBox(height: 16),
-                    const Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        _MadhhabChip(
-                          label: 'حنفی',
-                          sublabel: 'Hanafi',
-                          madhhab: 'Hanafi',
-                        ),
-                        _MadhhabChip(
-                          label: 'مالکی',
-                          sublabel: 'Maliki',
-                          madhhab: 'Maliki',
-                        ),
-                        _MadhhabChip(
-                          label: 'شافعی',
-                          sublabel: "Shafi'i",
-                          madhhab: "Shafi'i",
-                        ),
-                        _MadhhabChip(
-                          label: 'حنبلی',
-                          sublabel: 'Hanbali',
-                          madhhab: 'Hanbali',
-                        ),
-                        _MadhhabChip(
-                          label: 'فقہ مقارن',
-                          sublabel: 'Comparative (All 4)',
-                          madhhab: 'Comparative',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ] else ...[
-                  // ── Normal content rendering ─────────────────────────────
-
-                  // Collapsible Reasoning Pipeline (like DeepSeek / Claude Thinking)
-                  if (msg.reasoningSteps.isNotEmpty) ...[
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _isReasoningExpanded = !_isReasoningExpanded;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: ShiraziColors.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: ShiraziColors.outlineVariant.withValues(alpha: 0.2)),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              msg.isError ? Icons.alt_route : Icons.psychology_outlined,
-                              size: 14,
-                              color: msg.isError ? Colors.amber : ShiraziColors.secondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                msg.isError
-                                    ? (strings.lang == 'ur'
-                                        ? 'فال بیک نظام کی تفصیلات'
-                                        : (strings.lang == 'ar' ? 'مسار استدعاء الخوادم' : 'Fallback Engine Diagnostics'))
-                                    : strings.reasoningPipelineTitle,
-                                style: ShiraziTypography.dynamicLabel(
-                                  strings.lang,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: msg.isError ? Colors.amber : ShiraziColors.secondary,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              _isReasoningExpanded ? Icons.expand_less : Icons.expand_more,
-                              size: 16,
-                              color: ShiraziColors.outline,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_isReasoningExpanded) ...[
-                      const SizedBox(height: 8),
-                      ReasoningStepper(steps: msg.reasoningSteps),
-                    ],
-                    const SizedBox(height: 12),
-                  ],
-
-                  // Complete, un-truncated Scholarly Response rendered with rich typography & RTL/LTR detection
-                  ScholarlyMarkdownView(content: msg.content),
-
-                  // Graceful Exhaustion Action Bar: 1-Tap Retry & BYOK Config Shortcut
-                  if (msg.isError && msg.canRetry) ...[
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            context.read<ChatProvider>().retryMessage(msg);
-                          },
-                          icon: const Icon(Icons.refresh, size: 16),
-                          label: Text(
-                            strings.lang == 'ur'
-                                ? 'دوبارہ کوشش کریں'
-                                : (strings.lang == 'ar' ? 'إعادة المحاولة' : 'Retry Query'),
-                            style: ShiraziTypography.dynamicLabel(
-                              strings.lang,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: ShiraziColors.onPrimary,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ShiraziColors.primary,
-                            foregroundColor: ShiraziColors.onPrimary,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const SettingsByokScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.key, size: 16, color: ShiraziColors.secondary),
-                          label: Text(
-                            strings.lang == 'ur'
-                                ? 'ذاتی API Key درج کریں'
-                                : (strings.lang == 'ar' ? 'إعداد مفتاح شخصي' : 'Configure Fallback Keys'),
-                            style: ShiraziTypography.dynamicLabel(
-                              strings.lang,
-                              fontSize: 12,
-                              color: ShiraziColors.onSurface,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: ShiraziColors.outlineVariant.withOpacity(0.5)),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-
-                  // Urdu Annotation / Summary note if available
-                  if (msg.urduAnnotation != null && msg.urduAnnotation!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: ShiraziColors.surfaceContainerLowest.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0x33D4AF37), width: 0.8),
-                      ),
-                      child: Text(
-                        msg.urduAnnotation!,
-                        style: ShiraziTypography.urdu(
-                          fontSize: 14,
-                          color: ShiraziColors.primaryFixedDim,
-                          height: 1.8,
-                        ),
-                        textDirection: TextDirection.rtl,
-                      ),
-                    ),
-                  ],
-
-                  // Expandable Primary Sources & Citations
-                  if (msg.citations.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _isCitationsExpanded = !_isCitationsExpanded;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: ShiraziColors.surfaceContainerHigh.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.menu_book_rounded, size: 14, color: ShiraziColors.primary),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '${strings.citationsTitle} (${msg.citations.length})',
-                                style: ShiraziTypography.dynamicLabel(
-                                  strings.lang,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: ShiraziColors.primary,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              _isCitationsExpanded ? Icons.expand_less : Icons.expand_more,
-                              size: 16,
-                              color: ShiraziColors.outline,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_isCitationsExpanded) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: msg.citations.map((c) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: ShiraziColors.surfaceContainerLowest,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0x334D4635)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.bookmark_border, size: 12, color: ShiraziColors.secondary),
-                              const SizedBox(width: 4),
-                              Text(
-                                c,
-                                style: ShiraziTypography.dynamicLabel(
-                                  strings.lang,
-                                  fontSize: 11,
-                                  color: ShiraziColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )).toList(),
-                      ),
-                    ],
-                  ],
-
-                  ], // end of else (non-madhhabClarification content)
-
-                  const SizedBox(height: 14),
-                  const Divider(color: Color(0x224D4635), height: 1),
-                  const SizedBox(height: 6),
-
-                  // Actions Footer: Copy, Share, Audio
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.copy_rounded, size: 16, color: ShiraziColors.outline),
-                            tooltip: strings.copyAction,
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: msg.content));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(strings.copiedNotification),
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.share_outlined, size: 16, color: ShiraziColors.outline),
-                            tooltip: strings.shareAction,
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: msg.content));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Inquiry text copied for sharing.'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.volume_up_outlined, size: 16, color: ShiraziColors.outline),
-                            tooltip: strings.listenAction,
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Audio recitation starting...'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      Text(
-                        _formatTime(msg.timestamp),
-                        style: ShiraziTypography.dynamicLabel(
-                          strings.lang,
-                          fontSize: 10,
-                          color: ShiraziColors.outline,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
+            ],
+          ],
+
+          // Slim action footer
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 30),
+            child: Row(
+              children: [
+                _ActionIcon(
+                  icon: Icons.copy_rounded,
+                  tooltip: strings.copyAction,
+                  onTap: () => _copy(context, msg.content, strings.copiedNotification),
+                ),
+                _ActionIcon(
+                  icon: Icons.share_outlined,
+                  tooltip: strings.shareAction,
+                  onTap: () => _copy(context, msg.content, 'Inquiry text copied for sharing.'),
+                ),
+                _ActionIcon(
+                  icon: Icons.volume_up_outlined,
+                  tooltip: strings.listenAction,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Audio recitation starting...'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+                const Spacer(),
+                Text(
+                  _formatTime(msg.timestamp),
+                  style: ShiraziTypography.dynamicLabel(
+                    strings.lang,
+                    fontSize: 10,
+                    color: ShiraziColors.outline.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _copy(BuildContext context, String text, String note) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(note), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -576,8 +413,102 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   }
 }
 
+/// Slim collapsible section used for reasoning traces and citations.
+class _CollapsibleSection extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color accent;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Widget child;
+
+  const _CollapsibleSection({
+    required this.icon,
+    required this.title,
+    required this.accent,
+    required this.expanded,
+    required this.onToggle,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: ShiraziColors.surfaceContainerLowest.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: ShiraziColors.outlineVariant.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 14, color: accent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: ShiraziTypography.dynamicLabel(
+                      strings.lang,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                  color: ShiraziColors.outline,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded) ...[
+          const SizedBox(height: 8),
+          child,
+        ],
+      ],
+    );
+  }
+}
+
+class _ActionIcon extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _ActionIcon({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, size: 15, color: ShiraziColors.outline.withValues(alpha: 0.9)),
+      ),
+    );
+  }
+}
+
 /// Quick-reply chip for madhhab selection.
-/// Displayed when Shirazi asks the user to specify their jurisprudential school.
 class _MadhhabChip extends StatelessWidget {
   final String label;
   final String sublabel;
@@ -594,30 +525,21 @@ class _MadhhabChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          context.read<ChatProvider>().selectMadhhabAndProceed(madhhab);
-        },
-        borderRadius: BorderRadius.circular(10),
+        onTap: () => context.read<ChatProvider>().selectMadhhabAndProceed(madhhab),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF2A2510), Color(0xFF1E1C0E)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: const Color(0x88D4AF37),
+              color: ShiraziColors.primary.withValues(alpha: 0.45),
               width: 1.0,
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x44D4AF37),
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
