@@ -21,6 +21,10 @@ class ChatProvider with ChangeNotifier {
   StreamSubscription<List<ShiraziChatMessage>>? _msgSubscription;
 
   bool _isGenerating = false;
+
+  /// request_id of the in-flight Oracle query, if any — used to cancel it.
+  String? _activeRequestId;
+
   String _currentStreamingText = '';
   List<ReasoningStep> _currentReasoningSteps = [];
   String _selectedMadhhab = 'Hanafi';
@@ -395,6 +399,7 @@ class ChatProvider with ChangeNotifier {
       byokProvider: prefProv,
       fallbackKeys: fallbackKeys,
       providerPriority: providerPriority,
+      onRequestId: (rid) => _activeRequestId = rid,
       onProgress: (progressMsg) {
         final currentSteps = List<ReasoningStep>.from(_currentReasoningSteps);
         final updatedSteps = currentSteps.map((s) => ReasoningStep(
@@ -420,9 +425,11 @@ class ChatProvider with ChangeNotifier {
     stopwatch.stop();
     final latencyMs = stopwatch.elapsedMilliseconds;
     _serverLatencyMs = latencyMs;
+    _activeRequestId = null;
 
     final isExhausted = result['status'] == 'EXHAUSTED' || result['isExhausted'] == true;
     final isQuotaExhausted = result['status'] == 'QUOTA_EXHAUSTED';
+    final isCancelled = result['status'] == 'CANCELLED';
     final oracleKeysUsed = result['oracle_keys_used'] == true;
     final isByok = result['isByokFallback'] == true;
     final byokProv = result['byokProvider'] as String? ?? '';
@@ -445,13 +452,19 @@ class ChatProvider with ChangeNotifier {
       debugPrint('[ChatProvider] Refusing SUCCESS result without shirazi-oracle provenance.');
     }
     final noAnswerText = (result['answer'] as String?)?.trim().isEmpty ?? true;
-    final effectiveExhausted = isExhausted || isQuotaExhausted || isUntrustedSuccess || noAnswerText;
+    final effectiveExhausted = isExhausted ||
+        isQuotaExhausted ||
+        isUntrustedSuccess ||
+        noAnswerText ||
+        isCancelled;
 
-    final answerText = isQuotaExhausted
-        ? ApiService.getQuotaExhaustedMessage(queryLang, oracleKeysUsed)
-        : (noAnswerText
-            ? ApiService.getExhaustionMessage(queryLang)
-            : (result['answer'] as String? ?? ''));
+    final answerText = isCancelled
+        ? ApiService.getCancelledMessage(queryLang)
+        : isQuotaExhausted
+            ? ApiService.getQuotaExhaustedMessage(queryLang, oracleKeysUsed)
+            : (noAnswerText
+                ? ApiService.getExhaustionMessage(queryLang)
+                : (result['answer'] as String? ?? ''));
 
     List<ReasoningStep> finalSteps;
     if (isQuotaExhausted) {
@@ -468,6 +481,15 @@ class ChatProvider with ChangeNotifier {
               ? 'Personal key already routed via Shirazi pipeline — still at capacity'
               : 'Add a personal API key in Settings to route via the Shirazi pipeline',
           duration: '0.10s',
+          isCompleted: false,
+        ),
+      ];
+    } else if (isCancelled) {
+      finalSteps = [
+        const ReasoningStep(
+          title: 'Query cancelled',
+          detail: 'Cancellation sent to the Shirazi Oracle; no answer was generated',
+          duration: '0.05s',
           isCompleted: false,
         ),
       ];
@@ -535,7 +557,7 @@ class ChatProvider with ChangeNotifier {
       content: answerText,
       citations: resultCitations,
       reasoningSteps: finalSteps,
-      urduAnnotation: isExhausted
+      urduAnnotation: effectiveExhausted
           ? null
           : (isByok
               // BYOK keys only ever travel to the Oracle pipeline (§7); the
@@ -546,7 +568,7 @@ class ChatProvider with ChangeNotifier {
                   : 'خلاصۂ فقہی: شیرازی اوریکل سے حاصل کردہ جواب ($effectiveMadhhab مذہب)۔')),
       timestamp: DateTime.now(),
       latencyMs: latencyMs,
-      byokProvider: isExhausted
+      byokProvider: effectiveExhausted
           ? null
           : (isByok ? byokProv : (isRealtime ? 'Shirazi Core Agent (Live)' : null)),
       isByokFallback: isByok,
@@ -566,6 +588,18 @@ class ChatProvider with ChangeNotifier {
       conversationId: activeConv.id,
       message: assistantMessage,
     );
+  }
+
+  /// Cancels the in-flight Oracle query, if any (§8). Emits the socket
+  /// `cancel` event with the active request_id; the server stops its
+  /// pipeline and the local timer / progress stream are torn down with it.
+  /// The pending query completes with a structured CANCELLED state and the
+  /// question is preserved for retry.
+  Future<void> cancelCurrentQuery() async {
+    final rid = _activeRequestId;
+    if (rid == null || !_isGenerating) return;
+    debugPrint('[ChatProvider] Cancelling in-flight query $rid');
+    await apiService.cancelQuery(rid);
   }
 
   /// Retries a previously failed message with 1 tap, reusing the preserved question

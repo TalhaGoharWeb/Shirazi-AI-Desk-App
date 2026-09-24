@@ -37,9 +37,6 @@ void main() async {
     baseUrl: storageService.serverUrl,
     // §11: Socket.IO authentication — Firebase ID token attached on connect.
     authTokenProvider: () => authService.getIdToken(),
-    // §1: never transmit user keys over plain HTTP unless the user
-    // explicitly enables the development override in Settings.
-    allowInsecureHttp: storageService.allowInsecureHttp,
   );
 
   runApp(

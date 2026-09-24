@@ -100,6 +100,72 @@ void main() {
     });
   });
 
+  group('isLimitOrOutage — adversarial fiqh answers are NOT outage signals (§19)', () {
+    test('Urdu fiqh answer with "مصروفیت" (derivation of busy) is not flagged', () {
+      // 'مصروفیت' contains the substring 'مصروف' — the hardened trigger must
+      // not fire on the grammatical derivation.
+      const answer = 'مصروفیت کی وجہ سے اگر نماز قضا ہو جائے تو اس کی قضا واجب ہے۔';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('Arabic fiqh answer with "مشغولاً" (accusative of busy) is not flagged', () {
+      // 'مشغولاً' contains the substring 'مشغول' — the hardened trigger must
+      // not fire on the inflected form.
+      const answer = 'ما حكم تأخير الصلاة لمن كان مشغولاً بعمله؟';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('English fiqh answer with "busy at work" is not flagged', () {
+      // A bare "busy" in ordinary fiqh Q&A is not an outage announcement.
+      const answer =
+          'What is the ruling for one who is busy at work and delays the prayer?';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('English fiqh answer with "error in ijtihad" is not flagged', () {
+      const answer =
+          'An error in ijtihad by a qualified mujtahid does not incur sin.';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('English fiqh answer with "property remains unavailable" is not flagged', () {
+      const answer =
+          'The endowed property remains unavailable for sale under the waqf terms.';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('Arabic fiqh answer with "العطل في المبيع" (defect in sold item) is not flagged', () {
+      const answer = 'ما حكم العطل في المبيع إذا ظهر بعد القبض؟';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('Arabic fiqh answer with "الخادم" (servant) is not flagged', () {
+      const answer = 'هل تجوز شهادة الخادم في عقد البيع؟';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('Urdu fiqh answer mentioning "سرور" (hosting server) is not flagged', () {
+      const answer = 'کیا سرور پر میزبانی شدہ قرآن ایپ کا استعمال جائز ہے؟';
+      expect(isLimitOrOutage(null, answer), isFalse);
+    });
+    test('genuine outage signals are still detected', () {
+      // Real Urdu server outage message (bare 'مصروف', 'دستیاب نہیں', ...).
+      const urduOutage =
+          'اس وقت تحقیقی نظام کے تمام دستیاب AI ذرائع عارضی طور پر مصروف یا دستیاب نہیں ہیں۔ براہِ کرم کچھ دیر بعد دوبارہ کوشش فرمائیں۔';
+      expect(isLimitOrOutage(null, urduOutage), isTrue);
+      // 'busy' in an outage-like context is still an outage.
+      expect(isLimitOrOutage(null, 'Server is busy, try again later.'), isTrue);
+      expect(isLimitOrOutage(null, 'quota exceeded for this month'), isTrue);
+      expect(isLimitOrOutage(null, 'النظام مشغول حالياً، حاول لاحقاً'), isTrue);
+      expect(isLimitOrOutage(null, 'Service temporarily unavailable'), isTrue);
+    });
+    test('contextual short failure markers are still detected', () {
+      // Terse transport/service failures keep their outage meaning.
+      expect(isLimitOrOutage(null, 'server error'), isTrue);
+      expect(isLimitOrOutage(null, 'Server is down for maintenance.'), isTrue);
+      expect(
+          isLimitOrOutage(null, 'Request failed to connect to the Oracle.'),
+          isTrue);
+      expect(isLimitOrOutage(null, 'الخادم غير متاح حالياً، حاول لاحقاً'),
+          isTrue);
+      expect(isLimitOrOutage(null, 'خطأ في الاتصال بالخادم'), isTrue);
+      expect(isLimitOrOutage(null, 'عطل فني في النظام'), isTrue);
+    });
+  });
+
   group('hasOracleProvenance — provenance gate (§10)', () {
     test('SUCCESS with the Oracle tag is trusted', () {
       expect(

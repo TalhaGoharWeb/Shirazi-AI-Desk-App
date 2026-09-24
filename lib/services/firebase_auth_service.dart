@@ -66,7 +66,7 @@ class FirebaseAuthService {
       debugPrint('Firebase initialized successfully.');
     } catch (e) {
       _isFirebaseReady = false;
-      debugPrint('Firebase initialization notice (running in local vault fallback): $e');
+      debugPrint('[FirebaseAuthService] Firebase initialization failed — sign-in is unavailable: $e');
     }
   }
 
@@ -104,11 +104,12 @@ class FirebaseAuthService {
       }
     }
 
-    // Local fallback
+    // No fabricated session: without Firebase there is no ID token, so the
+    // Oracle server would reject every request. Fail honestly instead.
     return {
-      'success': true,
-      'uid': storageService.guestUid,
-      'message': 'Local guest researcher session active.',
+      'success': false,
+      'code': 'auth-service-unavailable',
+      'message': 'Sign-in service is currently unavailable. Please check your connection and try again.',
     };
   }
 
@@ -179,16 +180,14 @@ class FirebaseAuthService {
       }
     }
 
-    // Local Vault Fallback when Firebase backend is offline
-    storageService.login(
-      email: email.trim(),
-      name: scholarName,
-      role: isAdminRole ? 'Administrator' : scholarlyRank,
-    );
+    // REMOVED: the old "Local Vault Fallback" returned success:true for any
+    // credentials when Firebase was unavailable, showing the user as
+    // signed-in while the Oracle rejected every request (no ID token
+    // exists). Sign-in now fails honestly when the auth service is down.
     return {
-      'success': true,
-      'uid': storageService.guestUid,
-      'message': 'Scholar profile registered in encrypted local hardware vault.',
+      'success': false,
+      'code': 'auth-service-unavailable',
+      'message': 'Registration is currently unavailable — the sign-in service could not be reached. Please check your connection and try again.',
     };
   }
 
@@ -282,16 +281,14 @@ class FirebaseAuthService {
       }
     }
 
-    // Local Vault Fallback
-    storageService.login(
-      email: email.trim(),
-      name: isAdminEmail ? 'Administrator (Al-Muraqib)' : 'د. أحمد فاروق (Dr. Ahmad Farooq)',
-      role: isAdminEmail ? 'Administrator' : 'Mufti / Darul Ifta',
-    );
+    // REMOVED: the old "Local Vault Fallback" accepted any email/password
+    // and reported success when Firebase was unavailable — a fabricated
+    // login. The app showed signed-in while the Oracle rejected every
+    // request. Sign-in now fails honestly when the auth service is down.
     return {
-      'success': true,
-      'uid': storageService.guestUid,
-      'message': 'Authenticated via local encrypted research node.',
+      'success': false,
+      'code': 'auth-service-unavailable',
+      'message': 'Sign-in is currently unavailable — the authentication service could not be reached. Please check your connection and try again.',
     };
   }
 
@@ -386,8 +383,9 @@ class FirebaseAuthService {
     }
 
     return {
-      'success': true,
-      'message': 'Passphrase reset dispatched via local vault verification.',
+      'success': false,
+      'code': 'auth-service-unavailable',
+      'message': 'Password reset is currently unavailable — the sign-in service could not be reached. Please try again later.',
     };
   }
 

@@ -196,7 +196,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 chat.submitQuery(text);
               },
               onStop: () {
-                // Future cancellation hook
+                chat.cancelCurrentQuery();
               },
               selectedMadhhab: chat.selectedMadhhab,
               onMadhhabChanged: chat.setMadhhab,

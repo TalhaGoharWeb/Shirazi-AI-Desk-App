@@ -39,13 +39,6 @@ class SettingsProvider with ChangeNotifier {
   /// Log-safe Oracle endpoint label (no credentials).
   String get oracleServerLabel => apiService.redactedEndpoint;
 
-  /// Development-only override: allow user keys over plain HTTP. Default false.
-  bool get allowInsecureHttp => storageService.allowInsecureHttp;
-  void setAllowInsecureHttp(bool value) {
-    storageService.allowInsecureHttp = value;
-    notifyListeners();
-  }
-
   void toggleProviderEnabled(String provider, bool enabled) {
     storageService.setProviderEnabled(provider, enabled);
     notifyListeners();

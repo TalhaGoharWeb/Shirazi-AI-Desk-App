@@ -1100,8 +1100,7 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
   /// Connection security status (§1, §5).
   ///
   /// Shows whether the Oracle transport is HTTPS/WSS. User API keys are
-  /// NEVER transmitted over plain HTTP unless the development-only override
-  /// below is explicitly enabled.
+  /// NEVER transmitted over plain HTTP in release builds.
   Widget _buildSecuritySection(BuildContext context, dynamic settings) {
     final bool secure = settings.isSecureTransport as bool;
     final String label = settings.oracleServerLabel as String;
@@ -1148,29 +1147,9 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
           Text(
             secure
                 ? 'Questions and API keys travel over encrypted TLS.'
-                : 'Your Oracle server does not use TLS yet. API keys are BLOCKED from being sent until you switch to HTTPS or enable the development override below.',
+                : 'Your Oracle server does not use TLS yet. API keys are BLOCKED from being sent until you switch to HTTPS.',
             style: ShiraziTypography.bodySm(color: ShiraziColors.onSurfaceVariant),
           ),
-          if (!secure) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Switch(
-                  value: settings.allowInsecureHttp as bool,
-                  onChanged: (v) => settings.setAllowInsecureHttp(v),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Allow key transmission over HTTP (development only — never enable with real keys on untrusted networks)',
-                    style: ShiraziTypography.bodySm(
-                      color: ShiraziColors.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );

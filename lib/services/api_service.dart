@@ -27,12 +27,32 @@ class ApiService {
   late final proto.OracleEndpoint endpoint;
 
   /// Provides a Firebase ID token for Oracle authentication (socket auth +
-  /// future HTTP Authorization header). May be null when signed out.
+  /// HTTP Authorization header). May be null when signed out.
   final Future<String?> Function()? authTokenProvider;
 
-  /// When true, user keys may be transmitted over plain HTTP. Default false.
-  /// This is a development-only override; production must use HTTPS.
-  final bool allowInsecureHttp;
+  /// Debug-only insecure-transport override. Release builds NEVER transmit
+  /// user keys over plain HTTP. In debug builds, integration tests or a
+  /// local dev server may opt in explicitly via [debugAllowInsecureHttp].
+  /// There is intentionally no UI for this — it must never be shippable.
+  static bool _debugAllowInsecureHttp = false;
+
+  /// Test/debug hook: allow user-key transmission over plain HTTP in DEBUG
+  /// builds only. Ignored in release builds. Never expose this in UI.
+  @visibleForTesting
+  static set debugAllowInsecureHttp(bool value) {
+    _debugAllowInsecureHttp = value;
+  }
+
+  static bool get _insecureOverrideAllowed {
+    if (!kDebugMode) return false;
+    return _debugAllowInsecureHttp;
+  }
+
+  /// In-flight Socket.IO queries, keyed by request_id, so the UI can cancel
+  /// them: emits the server's `cancel` event, then tears down the socket,
+  /// the 150 s timer, and the progress stream.
+  final Map<String, IO.Socket> _activeSockets = {};
+  final Map<String, Completer<Map<String, dynamic>>> _activeCompleters = {};
 
   ApiService({
     // Production Oracle default (hardened Socket.IO server). Release builds
@@ -41,7 +61,6 @@ class ApiService {
     // dev address.
     this.baseUrl = 'https://shirazi-oracle.140-238-250-139.sslip.io',
     this.authTokenProvider,
-    this.allowInsecureHttp = false,
   }) {
     endpoint = proto.OracleEndpoint.parse(baseUrl);
   }
@@ -51,6 +70,41 @@ class ApiService {
 
   /// Log-safe endpoint label — never contains credentials.
   String get redactedEndpoint => endpoint.redacted;
+
+  /// Authenticated headers for Oracle HTTP routes. The hardened Oracle
+  /// requires a Firebase ID token on every non-/api/health route and 401s
+  /// without one. Returns an empty map when signed out — the call then 401s
+  /// and the caller must surface an honest auth error, never fail silently.
+  Future<Map<String, String>> _authHeaders() async {
+    try {
+      final idToken = await authTokenProvider?.call();
+      if (idToken != null && idToken.isNotEmpty) {
+        return {'Authorization': 'Bearer $idToken'};
+      }
+    } catch (e) {
+      debugPrint('[ApiService] auth token fetch failed: $e');
+    }
+    return {};
+  }
+
+  /// True when a socket/transport error looks like an Oracle authentication
+  /// rejection (missing, invalid, or expired Firebase ID token). Used to
+  /// route auth failures to the sign-in nudge instead of generic errors.
+  static bool _isAuthRejection(dynamic err) {
+    final s = err?.toString().toLowerCase() ?? '';
+    if (s.contains('401') || s.contains('unauthorized')) return true;
+    final hasAuthWord = s.contains('auth') ||
+        s.contains('token') ||
+        s.contains('jwt') ||
+        s.contains('forbidden') ||
+        s.contains('403');
+    final hasNegativeWord = s.contains('invalid') ||
+        s.contains('expired') ||
+        s.contains('reject') ||
+        s.contains('denied') ||
+        s.contains('missing');
+    return hasAuthWord && hasNegativeWord;
+  }
 
   /// Strips extraneous quotes, trailing spaces, newlines, and Bearer prefix
   static String sanitizeApiKey(String key) {
@@ -99,6 +153,7 @@ class ApiService {
           : '';
       final res = await http.get(
         Uri.parse('$baseUrl/api/scholar/fatwas$queryParam'),
+        headers: await _authHeaders(),
       ).timeout(const Duration(seconds: 12));
 
       if (res.statusCode == 200) {
@@ -133,6 +188,7 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('$baseUrl/api/scholar/fatwa/$id'),
+        headers: await _authHeaders(),
       ).timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
@@ -160,6 +216,9 @@ class ApiService {
     Map<String, String>? fallbackKeys,
     List<String>? providerPriority,
     void Function(String progressMessage)? onProgress,
+    // Called with the generated request_id so the caller (e.g. ChatProvider)
+    // can cancel this exact query via [cancelQuery].
+    void Function(String requestId)? onRequestId,
   }) async {
     final completer = Completer<Map<String, dynamic>>();
 
@@ -169,6 +228,7 @@ class ApiService {
     // Client-generated UUID v4 for end-to-end tracing (§9):
     // app -> Oracle API -> research pipeline -> AI provider -> response -> app.
     final requestId = proto.generateRequestId();
+    onRequestId?.call(requestId);
     final socketStopwatch = Stopwatch()..start();
 
     final userKeysPayload = <String, String>{};
@@ -195,7 +255,7 @@ class ApiService {
     // the keys at all and return an honest, localized blocked state.
     if (userKeysPayload.isNotEmpty &&
         !endpoint.isSecure &&
-        !allowInsecureHttp) {
+        !_insecureOverrideAllowed) {
       debugPrint(
           '[ApiService] BLOCKED: refusing to transmit user keys over insecure transport '
           '(${endpoint.redacted}). Enable HTTPS on the Oracle server.');
@@ -225,6 +285,9 @@ class ApiService {
         builder.setAuth({'token': idToken});
       }
       socket = IO.io(endpoint.baseUrl, builder.build());
+      // Track the in-flight query so [cancelQuery] can reach it.
+      _activeSockets[requestId] = socket!;
+      _activeCompleters[requestId] = completer;
 
       socket.onConnect((_) {
         socket!.emit('chat', {
@@ -409,7 +472,18 @@ class ApiService {
       socket.on('chat-error', (err) {
         debugPrint('Socket chat-error received: $err');
         if (!completer.isCompleted) {
-          completer.completeError('Server chat error: $err');
+          if (_isAuthRejection(err)) {
+            // The Oracle rejected our authentication — surface the sign-in
+            // nudge, not a generic server error or exhaustion text.
+            completer.complete(_oracleErrorResult(
+              requestId: requestId,
+              transport: 'socket.io',
+              message: _getAuthErrorMessage(lang),
+              failure: proto.OracleFailure.authRejected,
+            ));
+          } else {
+            completer.completeError('Server chat error: $err');
+          }
         }
       });
 
@@ -420,15 +494,42 @@ class ApiService {
         }
       });
 
+      // Server acknowledgement of our `cancel` emit (§8): the pipeline was
+      // stopped. Complete with the structured CANCELLED state.
+      socket.on('cancelled', (data) {
+        if (!completer.isCompleted) {
+          debugPrint('[ApiService] Oracle acknowledged cancellation.');
+          completer.complete(_cancelledResult(requestId: requestId));
+        }
+      });
+
       socket.onConnectError((err) {
         if (!completer.isCompleted) {
-          completer.completeError(err);
+          if (_isAuthRejection(err)) {
+            completer.complete(_oracleErrorResult(
+              requestId: requestId,
+              transport: 'socket.io',
+              message: _getAuthErrorMessage(lang),
+              failure: proto.OracleFailure.authRejected,
+            ));
+          } else {
+            completer.completeError(err);
+          }
         }
       });
 
       socket.onError((err) {
         if (!completer.isCompleted) {
-          completer.completeError(err);
+          if (_isAuthRejection(err)) {
+            completer.complete(_oracleErrorResult(
+              requestId: requestId,
+              transport: 'socket.io',
+              message: _getAuthErrorMessage(lang),
+              failure: proto.OracleFailure.authRejected,
+            ));
+          } else {
+            completer.completeError(err);
+          }
         }
       });
 
@@ -455,6 +556,8 @@ class ApiService {
       debugPrint('[ApiService] Shirazi Oracle socket attempt failed: $e. Falling back to verified fatwa library probe...');
     } finally {
       timeoutTimer?.cancel();
+      _activeSockets.remove(requestId);
+      _activeCompleters.remove(requestId);
       try {
         socket?.disconnect();
         socket?.dispose();
@@ -506,6 +609,49 @@ class ApiService {
       'citations': <String>[],
       'byokProvider': null,
       'isByokFallback': false,
+    };
+  }
+
+  /// Cancels an in-flight Socket.IO query (§8). Emits the server's `cancel`
+  /// event with the active request_id, then tears down the local socket —
+  /// which also stops the 150 s research timer and the progress stream —
+  /// completing the pending result with a structured CANCELLED state.
+  /// Safe to call when nothing is in flight (no-op).
+  Future<void> cancelQuery(String requestId) async {
+    final socket = _activeSockets.remove(requestId);
+    final completer = _activeCompleters.remove(requestId);
+    if (socket != null) {
+      try {
+        socket.emit('cancel', {'request_id': requestId});
+      } catch (_) {}
+      try {
+        socket.disconnect();
+        socket.dispose();
+      } catch (_) {}
+      debugPrint('[ApiService] Cancelled in-flight query $requestId.');
+    }
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(_cancelledResult(requestId: requestId));
+    }
+  }
+
+  /// Structured cancellation result. The user stopped the query before the
+  /// Oracle answered; the question is preserved for retry — never replaced
+  /// by a fabricated answer.
+  Map<String, dynamic> _cancelledResult({required String requestId}) {
+    return {
+      'status': 'CANCELLED',
+      'source': 'shirazi-oracle',
+      'request_id': requestId,
+      'transport': 'socket.io',
+      'oracle_url': baseUrl,
+      'answered_at': DateTime.now().toUtc().toIso8601String(),
+      'answer': '',
+      'citations': <String>[],
+      'isRealtimeStream': true,
+      'canRetry': true,
+      'isByokFallback': false,
+      'byokProvider': null,
     };
   }
 
@@ -608,6 +754,10 @@ class ApiService {
   static String _getAuthErrorMessage(String lang) =>
       proto.getAuthErrorMessage(lang);
 
+  /// Localized notice for a user-cancelled query.
+  static String getCancelledMessage(String lang) =>
+      proto.getCancelledMessage(lang);
+
   /// Localized exhaustion error notice preserving question for 1-tap retry
   static String getExhaustionMessage(String lang) =>
       proto.getExhaustionMessage(lang);
@@ -625,6 +775,7 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('$baseUrl/api/scholar/fatwas'),
+        headers: await _authHeaders(),
       ).timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
@@ -942,6 +1093,7 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('$baseUrl/api/admin/keys/diagnostics'),
+        headers: await _authHeaders(),
       ).timeout(const Duration(seconds: 35));
 
       if (res.statusCode == 200) {
@@ -989,6 +1141,7 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('$baseUrl/api/admin/keys/diagnostics'),
+        headers: await _authHeaders(),
       ).timeout(const Duration(seconds: 35));
 
       if (res.statusCode == 200) {

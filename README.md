@@ -36,8 +36,8 @@ Built with a **zero-hallucination mandate**, the system incorporates strict Madh
 * **Grounded Source Notices**: If no verified classical source matches the query, the app honestly discloses the absence of verified sources rather than fabricating references.
 
 ### ⚡ Oracle-Only Answer Guarantee & BYOK Resilience
-* **Tier 1 (Shirazi Core Socket)**: Real-time Socket.IO streaming from the primary Shirazi Research Engine (`http://129.154.242.136:4040`), with a research-realistic 150s window and live progress events.
-* **Tier 2 (Server-Side BYOK)**: If the socket transport itself is unreachable, the same question is sent once over HTTP (`POST /api/chat`) — still to the Shirazi Oracle, which runs its full Shamela research / retrieval / verification pipeline using the user's key for inference.
+* **Tier 1 (Shirazi Core Socket)**: Real-time Socket.IO streaming from the primary Shirazi Research Engine (`https://shirazi-oracle.140-238-250-139.sslip.io`), with a research-realistic 150s window, live progress events, and user-cancellable queries.
+* **Tier 2 (Server-Side BYOK)**: If the server's inference quota is exhausted, the same question is retried through the Shirazi Oracle pipeline with the user's own API key (gemini/groq/openrouter) — still to the Shirazi Oracle, which runs its full Shamela research / retrieval / verification pipeline using that key for inference.
 * **Tier 3 (Canonical Fatwa Queue)**: Probes the Oracle's verified fatwa library for a topic-matched, madhhab-compatible scholarly answer.
 * **Hard guarantee**: the app NEVER calls Groq / Gemini / OpenRouter (or any AI provider) directly. User keys are only ever transmitted to the Shirazi Oracle Server. If the Oracle cannot answer, the app shows an honest exhaustion notice and preserves the question for retry — it never substitutes a generic AI answer.
 

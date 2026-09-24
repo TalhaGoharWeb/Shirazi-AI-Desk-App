@@ -329,15 +329,61 @@ bool isLimitOrOutage(Map? data, String answer) {
   final a = answer.trim();
   final lower = a.toLowerCase();
 
+  // ── Hardened single-word triggers (§19) ──────────────────────────────
+  // Bare substring matching on these misfired on legitimate fiqh prose:
+  // Urdu 'مصروفیت' contains 'مصروف'; Arabic 'مشغولاً' contains 'مشغول';
+  // English "busy at work" contains 'busy'. Each is now matched so that
+  // grammatical derivations of ordinary fiqh vocabulary do not trip it,
+  // while the server's real outage phrasing still matches.
+  final urduBusyOutage = RegExp(r'مصروف(?!ی)').hasMatch(a);
+  final arabicBusyOutage = RegExp(r'مشغول(?![اة])').hasMatch(a);
+  final englishBusyOutage = RegExp(r'\bbusy\b').hasMatch(lower) &&
+      (lower.contains('server') ||
+          lower.contains('try again') ||
+          lower.contains('unavailable') ||
+          lower.contains('temporarily'));
+
+  // ── Contextual failure markers (§19) ─────────────────────────────────
+  // Bare words like 'unavailable', 'error', 'failed', 'server', 'عطل',
+  // 'خطأ', 'خادم', 'سرور' all occur in legitimate fiqh prose ("an error in
+  // ijtihad", "the property remains unavailable", "a defect (عطل) in a sold
+  // item", "a servant (خادم)"), so each one needs transport/service failure
+  // context before it counts as an outage signal.
+  final unavailableOutage = RegExp(
+    r'\b(service|server|system)\b.{0,24}\bunavailable\b'
+    r'|\btemporarily unavailable\b',
+  ).hasMatch(lower);
+  final serverFailureOutage = RegExp(
+    r'\b(server|service|system)\b.{0,20}\b(error|unavailable|busy|down|failed|failure|timeout)\b'
+    r'|(connection|network|request|chat|socket)[\s_-]*\berror\b'
+    r'|\berror\s*[:：]'
+    r'|\bfailed to (connect|fetch|load|reach|send)\b'
+    r'|(connection|request|chat|socket)\s+failed\b',
+  ).hasMatch(lower);
+  final arabicOutageFault = RegExp(r'عطل\s+(مؤقت|فني)').hasMatch(a) ||
+      a.contains('عطل في الخادم') ||
+      a.contains('عطل في النظام') ||
+      a.contains('عطل في الاتصال');
+  final arabicErrorFault = a.contains('خطأ في الخادم') ||
+      a.contains('خطأ في الاتصال') ||
+      a.contains('خطأ في النظام') ||
+      RegExp(r'خطأ\s*[:：]').hasMatch(a) ||
+      RegExp(r'خطأ\s+رقم\s*\d').hasMatch(a);
+  final arabicServerFault = RegExp(r'(عطل|خطأ)\s+في\s+الخادم').hasMatch(a) ||
+      RegExp(r'الخادم\s+(غير متاح|مشغول|متوقف|لا يستجيب|معطل)').hasMatch(a);
+  final urduServerFault = RegExp(r'سرور\s+(خراب|بند|ڈاؤن|مصروف)').hasMatch(a) ||
+      RegExp(r'سرور\s+میں\s+(خرابی|عطل)').hasMatch(a) ||
+      a.contains('سرور دستیاب نہیں');
+
   if (a.contains('دستیاب نہیں') ||
       a.contains('عارضی طور پر') ||
-      a.contains('مصروف') ||
+      urduBusyOutage ||
       a.contains('تمام دستیاب') ||
       a.contains('دوبارہ کوشش') ||
       a.contains('عطل مؤقت') ||
       a.contains('غير متاحة') ||
       a.contains('مشغولة') ||
-      a.contains('مشغول') ||
+      arabicBusyOutage ||
       a.contains('الحد المسموح') ||
       a.contains('تم الوصول للحد') ||
       a.contains('تجاوزت الحد') ||
@@ -349,20 +395,20 @@ bool isLimitOrOutage(Map? data, String answer) {
       lower.contains('limit reached') ||
       lower.contains('too many requests') ||
       lower.contains('free tier exhausted') ||
-      lower.contains('busy') ||
-      lower.contains('unavailable') ||
+      englishBusyOutage ||
+      unavailableOutage ||
       lower.contains('try again later')) {
     return true;
   }
 
+  // Short terse texts (<220 chars): only contextual transport/service
+  // failure markers count — never the bare words on their own.
   if (a.length < 220 &&
-      (a.contains('عطل') ||
-          a.contains('خطأ') ||
-          a.contains('خادم') ||
-          a.contains('سرور') ||
-          a.contains('server') ||
-          a.contains('error') ||
-          a.contains('failed'))) {
+      (serverFailureOutage ||
+          arabicOutageFault ||
+          arabicErrorFault ||
+          arabicServerFault ||
+          urduServerFault)) {
     return true;
   }
 
@@ -437,6 +483,22 @@ String getAuthErrorMessage(String lang) {
       return 'رفض خادم الشيرازي مصادقة هذا الطلب.\n\nلم يتم إنشاء أي إجابة. يرجى تسجيل الدخول مرة أخرى أو إعادة المحاولة لاحقاً.';
     default:
       return 'The Shirazi server rejected this request\u2019s authentication.\n\nNo answer has been generated. Please sign in again or retry shortly.';
+  }
+}
+
+/// Localized notice for a user-cancelled query. The Oracle pipeline was
+/// stopped before producing an answer; the question is preserved for retry.
+String getCancelledMessage(String lang) {
+  switch (lang) {
+    case 'ur':
+      return 'آپ نے یہ سوال منسوخ کر دیا ہے۔ کوئی جواب تیار نہیں کیا گیا۔\n\n'
+          'آپ کا سوال محفوظ ہے؛ "دوبارہ کوشش" دبائیں۔';
+    case 'ar':
+      return 'لقد ألغيت هذا السؤال. لم يتم إنشاء أي إجابة.\n\n'
+          'سؤالك محفوظ؛ اضغط "إعادة المحاولة".';
+    default:
+      return 'You cancelled this question. No answer was generated.\n\n'
+          'Your question is preserved; tap "Retry Query".';
   }
 }
 

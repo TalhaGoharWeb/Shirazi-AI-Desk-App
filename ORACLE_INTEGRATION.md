@@ -2,7 +2,7 @@
 
 This document is the single source of truth for how the Shirazi AI Desk App
 talks to the Shirazi Oracle Server. It is based on **observed behavior** against
-the live server (`http://129.154.242.136:4040`, tested 2026-09-22 UTC), not on
+the live server (`https://shirazi-oracle.140-238-250-139.sslip.io`, hardened and verified 2026-09-24 UTC), not on
 assumptions. Anything not observed is marked as such.
 
 ## Core guarantee
@@ -118,16 +118,18 @@ assumptions. Anything not observed is marked as such.
   `OracleFailure` taxonomy, UUID v4 `generateRequestId()`, `hasOracleProvenance()`
   gate, `requestIdMatches()`, allowlist-filtered `priorityListFor()`, plus all
   localized failure messages.
-- `ApiService` now REFUSES to transmit user API keys over plain HTTP unless the
-  development-only `allowInsecureHttp` override is on (default off). Questions
+- `ApiService` REFUSES to transmit user API keys over plain HTTP, unconditionally
+  in release builds (the old user-facing `allowInsecureHttp` toggle has been
+  removed; only a debug-build-only test hook remains, with no UI). Questions
   without keys still work over HTTP with a warning.
 - Socket.IO: Firebase ID token attached via `setAuth({'token': idToken})` on
   connect (§11); `request_id` (UUID v4) sent in the `chat` payload and POST body;
   echoed request IDs are validated (§9).
 - Settings shows a live transport banner: "Secure connection (HTTPS/WSS)" vs
-  "Insecure connection (HTTP)" with the insecure-HTTP toggle (§1).
-- Live verification 2026-09-22: the Oracle still has NO TLS (plain HTTP only,
-  port 4040). HTTPS deployment requires server access — see docs/DEPLOYMENT.md.
+  "Insecure connection (HTTP)" (§1).
+- Live verification 2026-09-24: the Oracle serves HTTPS at
+  `https://shirazi-oracle.140-238-250-139.sslip.io` (Let's Encrypt, HSTS);
+  public ports are 443/80 only — 4040/8000/8020/8080 are closed externally.
 
 ### BYOK key storage (§7) — honest security model
 - The old device-bound XOR `enc_` cipher was obfuscation, not encryption. It is

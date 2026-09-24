@@ -44,7 +44,6 @@ class StorageService {
   static const String _keyScholarEmail = 'auth_scholar_email';
   static const String _keyScholarRole = 'auth_scholar_role';
   static const String _keyGuestUid = 'auth_guest_uid';
-  static const String _keyAllowInsecureHttp = 'pref_allow_insecure_http';
 
   final SharedPreferences _prefs;
 
@@ -240,11 +239,6 @@ class StorageService {
     // never crash (migrated properly on loadSecureKeys).
     return _decryptLegacyKey(_prefs.getString(_legacyPrefsKey(p)) ?? '');
   }
-
-  /// Development-only override: allow transmitting user keys over plain HTTP.
-  /// Default false. Production must use HTTPS.
-  bool get allowInsecureHttp => _prefs.getBool(_keyAllowInsecureHttp) ?? false;
-  set allowInsecureHttp(bool value) => _prefs.setBool(_keyAllowInsecureHttp, value);
 
   // Preferred & Secondary Fallback Priority
   String get preferredProvider => _prefs.getString(_keyPreferredProvider) ?? selectedProvider;

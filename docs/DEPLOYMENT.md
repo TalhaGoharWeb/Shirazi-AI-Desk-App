@@ -2,16 +2,19 @@
 
 Step-by-step deployment for the production hardening in branch
 `oracle-production-hardening`. Server-side steps require access to the Oracle
-host (129.154.242.136) — they cannot be done from the app repository alone.
+host (`https://shirazi-oracle.140-238-250-139.sslip.io`, 140.238.250.139) —
+they cannot be done from the app repository alone.
 
 ---
 
 ## 1. HTTPS for the Oracle server (§1)
 
-**Status: NOT DONE — requires server access. Verified 2026-09-22: the live
-server answers HTTP 200 on port 4040 and offers no TLS.**
+**Status: DONE — verified 2026-09-24 UTC. The Oracle serves HTTPS at
+`https://shirazi-oracle.140-238-250-139.sslip.io` (Let's Encrypt, HSTS);
+public ports are 443/80 only — 4040/8000/8020/8080 are closed externally.
+Socket.IO runs over WSS.**
 
-Recommended: Caddy (automatic Let's Encrypt) in front of the Oracle.
+How it was done (reference): Caddy (automatic Let's Encrypt) in front of the Oracle.
 
 ```bash
 # On the Oracle host (Ubuntu example)
@@ -103,7 +106,8 @@ firebase emulators:start --only firestore
 **Status: NOT DONE — requires Oracle source/host access.** Hand this to the
 server owner:
 
-- [ ] Serve HTTPS only (§1); Socket.IO over WSS.
+- [x] Serve HTTPS only (§1); Socket.IO over WSS. DONE 2026-09-24
+      (Let's Encrypt, HSTS; 4040/8000/8020/8080 closed externally).
 - [ ] Verify Firebase ID tokens on socket connect AND on each HTTP request;
       derive user identity from the token — never trust client `userId`/`role`.
 - [ ] Scope Socket.IO rooms per user; no cross-user subscription (§11, §12).
@@ -140,11 +144,11 @@ flutter build apk --release
 Production notes:
 - `flutter_secure_storage` added for BYOK keys (Android Keystore / iOS
   Keychain, encryptedSharedPreferences on Android). Run `flutter pub get`.
-- `allowInsecureHttp` defaults to false: with the current HTTP-only Oracle,
-  API keys will be BLOCKED from transmission until HTTPS is deployed —
-  this is intentional (§5).
-- The app keeps working for key-less questions over HTTP with a visible
-  "Insecure connection" banner in Settings.
+- User API keys are NEVER transmitted over plain HTTP in release builds —
+  the old `allowInsecureHttp` user toggle has been removed entirely (§5).
+  The Oracle now serves HTTPS, so keyed requests work normally.
+- The app keeps working for key-less questions, with a live transport
+  banner in Settings showing "Secure connection (HTTPS/WSS)".
 
 ## 6. Verification matrix (run after deploy)
 
