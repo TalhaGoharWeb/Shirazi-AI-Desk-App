@@ -41,7 +41,7 @@ class ShiraziTheme {
           statusBarBrightness: Brightness.dark,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: ShiraziColors.surfaceContainerLow,
         elevation: 0,
         shape: RoundedRectangleBorder(
