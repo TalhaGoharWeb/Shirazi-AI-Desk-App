@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/shirazi_colors.dart';
 import '../core/theme/shirazi_typography.dart';
 import '../core/constants/shirazi_spacing.dart';
+import '../core/localization/app_strings.dart';
 import '../widgets/shirazi_emblem.dart';
 import '../services/firebase_auth_service.dart';
 import 'main_shell.dart';
@@ -32,6 +33,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool _obscurePassword = true;
   bool _honorCodeAccepted = false;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _errorMessage;
 
   static const _madhhabs = [
@@ -147,6 +149,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       );
     } else {
       setState(() => _errorMessage = (result['message'] as String?) ?? 'Registration failed. Please try again.');
+    }
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    final authService = Provider.of<FirebaseAuthService>(context, listen: false);
+    final result = await authService.signInWithGoogle();
+
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = false);
+
+    if (result['success'] == true) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainShell()),
+        (route) => false,
+      );
+    } else if (result['code'] == 'cancelled') {
+      setState(() => _errorMessage = AppStrings.of(context).googleSignInCancelled);
+    } else {
+      setState(() => _errorMessage =
+          (result['message'] as String?) ?? 'Google sign-up failed. Please try again.');
     }
   }
 
@@ -469,6 +497,47 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
                     const SizedBox(height: ShiraziSpacing.spaceMd),
 
+                    // Google sign-up
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _isGoogleLoading ? null : _handleGoogleSignUp,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ShiraziColors.onSurface,
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          side: BorderSide(
+                            color: ShiraziColors.outlineVariant.withValues(alpha: 0.6),
+                          ),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: ShiraziRadius.roundedLg,
+                          ),
+                        ),
+                        child: _isGoogleLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2.2),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const _GoogleMark(),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    AppStrings.of(context).signUpWithGoogle,
+                                    style: ShiraziTypography.labelMd(
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF3C4043),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: ShiraziSpacing.spaceMd),
+
                     InkWell(
                       onTap: () => Navigator.pop(context),
                       child: Padding(
@@ -655,6 +724,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       focusedErrorBorder: const OutlineInputBorder(
         borderRadius: ShiraziRadius.roundedLg,
         borderSide: BorderSide(color: ShiraziColors.error, width: 1.5),
+      ),
+    );
+  }
+}
+
+/// Compact Google "G" brand mark (drawn, no asset needed).
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF4285F4),
+          height: 1.0,
+        ),
       ),
     );
   }

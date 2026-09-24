@@ -1185,6 +1185,27 @@ class AppStrings {
       default: return 'Error';
     }
   }
+  String get continueWithGoogle {
+    switch (lang) {
+      case 'ar': return 'المتابعة باستخدام Google';
+      case 'ur': return 'گوگل کے ساتھ جاری رکھیں';
+      default: return 'Continue with Google';
+    }
+  }
+  String get signUpWithGoogle {
+    switch (lang) {
+      case 'ar': return 'إنشاء حساب باستخدام Google';
+      case 'ur': return 'گوگل کے ساتھ اکاؤنٹ بنائیں';
+      default: return 'Sign up with Google';
+    }
+  }
+  String get googleSignInCancelled {
+    switch (lang) {
+      case 'ar': return 'تم إلغاء تسجيل الدخول عبر Google.';
+      case 'ur': return 'گوگل سائن اِن منسوخ کر دیا گیا۔';
+      default: return 'Google sign-in was cancelled.';
+    }
+  }
   String get apiKeySavedLocal {
     switch (lang) {
       case 'ar': return 'تم حفظ مفتاح API في التخزين الآمن للجهاز';

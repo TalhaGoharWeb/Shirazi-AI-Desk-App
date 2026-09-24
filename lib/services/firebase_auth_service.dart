@@ -197,6 +197,108 @@ class FirebaseAuthService {
     };
   }
 
+  /// Sign in / sign up with a Google account.
+  ///
+  /// Uses Firebase's cross-platform [signInWithProvider] (system browser /
+  /// popup) so it works on Android and web with no extra plugins. On
+  /// success the Firestore profile is fetched-or-created, local profile
+  /// state is updated, and BYOK keys are merged with the private cloud
+  /// vault — exactly like email sign-in.
+  ///
+  /// NOTE: the Google provider must be enabled in the Firebase console
+  /// (Authentication → Sign-in method → Google) or this returns
+  /// `operation-not-allowed`.
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    if (!_isFirebaseReady) {
+      return {
+        'success': false,
+        'code': 'auth-service-unavailable',
+        'message':
+            'Sign-in service is currently unavailable. Please check your connection and try again.',
+      };
+    }
+    try {
+      final credential = await FirebaseAuth.instance.signInWithProvider(
+        GoogleAuthProvider(),
+      );
+      final user = credential.user;
+      if (user == null) {
+        return {
+          'success': false,
+          'code': 'no-user',
+          'message': 'Google sign-in did not return a user account.',
+        };
+      }
+
+      String name = user.displayName ?? 'Scholar Researcher';
+      String? profileMadhhab;
+      String? profileRank;
+
+      // Fetch existing scholar profile, or create the Firestore record.
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (doc.exists) {
+          final data = doc.data()!;
+          name = data['displayName'] ?? data['scholarName'] ?? name;
+          profileMadhhab = data['madhhab'] as String?;
+          profileRank = data['scholarlyRank'] as String?;
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({'lastLogin': FieldValue.serverTimestamp()});
+        } else {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
+            'uid': user.uid,
+            'email': user.email,
+            'displayName': name,
+            'photoURL': user.photoURL,
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastLogin': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Google sign-in profile sync notice: $e');
+      }
+
+      storageService.login(
+        email: user.email ?? '',
+        name: name,
+        role: profileRank ?? 'Scholar Researcher',
+        madhhab: profileMadhhab,
+        rank: profileRank,
+      );
+
+      await mergeApiKeysWithCloud();
+
+      return {
+        'success': true,
+        'uid': user.uid,
+        'message': 'Signed in with Google.',
+      };
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user' || e.code == 'cancelled') {
+        return {'success': false, 'code': 'cancelled', 'message': ''};
+      }
+      return {
+        'success': false,
+        'code': e.code,
+        'message': _parseAuthErrorMessage(e.code, e.message),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'code': 'google-sign-in-failed',
+        'message': 'Google sign-in failed: $e',
+      };
+    }
+  }
+
   /// Sign In with Email and Passphrase
   Future<Map<String, dynamic>> signInScholar({
     required String email,
