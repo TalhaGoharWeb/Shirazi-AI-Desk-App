@@ -4,7 +4,7 @@ import 'package:shirazi_app/services/api_service.dart';
 
 void main() {
   test('ApiService streamRealtimeQuery resolves queries cleanly without connection error', () async {
-    final apiService = ApiService(baseUrl: 'http://129.154.242.136:4040');
+    final apiService = ApiService(baseUrl: 'http://140.238.250.139:4040');
 
     // Test with a sample Urdu query
     final resUrdu = await apiService.streamRealtimeQuery(

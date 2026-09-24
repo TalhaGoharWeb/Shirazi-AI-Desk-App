@@ -178,7 +178,6 @@ class ResearchProvider with ChangeNotifier {
       madhhab: effectiveMadhhab.isNotEmpty ? effectiveMadhhab : 'Hanafi',
       byokKey: personalKey,
       byokProvider: selectedProv,
-      autoFailover: storageService.autoFailover,
       onProgress: (progressMsg) {
         final currentSteps = List<ReasoningStep>.from(_activeInquiry.reasoningSteps);
         final updatedSteps = currentSteps.map((s) => ReasoningStep(

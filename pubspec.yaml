@@ -24,6 +24,9 @@ dependencies:
   firebase_auth: ^6.7.0
   cloud_firestore: ^6.10.0
   socket_io_client: ^3.1.6
+  # Ed25519 signature verification + SHA-256 for Oracle response provenance
+  # (§2): pure-Dart implementation, keeps oracle_protocol unit-testable.
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:

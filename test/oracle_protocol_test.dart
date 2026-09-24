@@ -7,11 +7,13 @@
 /// - HTTP status -> OracleFailure taxonomy (400/401/403/404/408/409/429/5xx)
 /// - Outage / quota-exhaustion text detection (ur/ar/en)
 /// - Provenance gate: SUCCESS without the Oracle source tag is untrusted
-/// - Request-ID echo validation
-/// - BYOK provider allowlist (no arbitrary-proxy steering)
-/// - Endpoint parsing: https vs http, wss vs ws, log redaction
-/// - UUID v4 request-ID shape
-/// - Localized failure messages never promise a substituted answer
+/// - Request-ID echo validation (strict: missing/foreign echoes rejected)
+/// - Ed25519 response provenance: SPKI parse, sha256hex, signed-message
+///   construction, signature verify, untrusted-response messaging
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:cryptography/cryptography.dart';
 import 'package:test/test.dart';
 
 import 'package:shirazi_app/services/oracle_protocol.dart';
@@ -122,16 +124,16 @@ void main() {
     });
   });
 
-  group('requestIdMatches — request/response correlation (§9)', () {
+  group('requestIdMatches — request/response correlation (§9, strict)', () {
     test('matching echo validates', () {
       expect(requestIdMatches({'request_id': 'abc'}, 'abc'), isTrue);
     });
     test('mismatched echo is rejected', () {
       expect(requestIdMatches({'request_id': 'other'}, 'abc'), isFalse);
     });
-    test('absent echo is tolerated (server may not echo yet)', () {
-      expect(requestIdMatches({}, 'abc'), isTrue);
-      expect(requestIdMatches({'request_id': ''}, 'abc'), isTrue);
+    test('absent or empty echo is rejected (stray/duplicate)', () {
+      expect(requestIdMatches({}, 'abc'), isFalse);
+      expect(requestIdMatches({'request_id': ''}, 'abc'), isFalse);
     });
   });
 
@@ -223,6 +225,80 @@ void main() {
     test('English quota message explicitly disclaims substitutes', () {
       final m = getQuotaExhaustedMessage('en', false).toLowerCase();
       expect(m.contains('no substitute ai answer has been generated'), isTrue);
+    });
+  });
+
+  group('Oracle Ed25519 response provenance (§2)', () {
+    test('SPKI constant decodes to a 32-byte raw Ed25519 key', () {
+      final raw = ed25519RawKeyFromSpki(
+          Uint8List.fromList(base64Decode(oracleEd25519PublicKeySpki)));
+      expect(raw.length, 32);
+    });
+
+    test('ed25519RawKeyFromSpki rejects malformed DER', () {
+      expect(() => ed25519RawKeyFromSpki(Uint8List(44)), throwsFormatException);
+      expect(() => ed25519RawKeyFromSpki(Uint8List(10)), throwsFormatException);
+    });
+
+    test('sha256Hex matches the known SHA-256 of "abc"', () async {
+      expect(await sha256Hex('abc'),
+          'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    });
+
+    test('oracleSignatureMessage rebuilds the dotted signed string', () async {
+      final msg = await oracleSignatureMessage(
+        responseId: 'resp-1',
+        requestId: 'req-1',
+        answer: 'abc',
+      );
+      expect(msg,
+          'resp-1.req-1.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    });
+
+    test('sign/verify round-trip accepts; tampered message is rejected', () async {
+      // Fresh keypair (NOT the Oracle key): exercises the verify path.
+      final keyPair = await Ed25519().newKeyPair();
+      final publicKey = await keyPair.extractPublicKey();
+      final message = await oracleSignatureMessage(
+        responseId: 'resp-1',
+        requestId: 'req-1',
+        answer: 'abc',
+      );
+      final signature =
+          await Ed25519().sign(utf8.encode(message), keyPair: keyPair);
+      final ok = await Ed25519().verify(utf8.encode(message),
+          signature: Signature(signature.bytes, publicKey: publicKey));
+      expect(ok, isTrue);
+      final bad = await Ed25519().verify(utf8.encode('$message-tampered'),
+          signature: Signature(signature.bytes, publicKey: publicKey));
+      expect(bad, isFalse);
+    });
+
+    test('verifyOracleProvenance rejects garbage signature / wrong key_id', () async {
+      expect(
+          await verifyOracleProvenance(
+            responseId: 'resp-1',
+            requestId: 'req-1',
+            answer: 'abc',
+            signatureBase64: base64Encode(List.filled(64, 0)),
+            keyId: oracleEd25519KeyId,
+          ),
+          isFalse);
+      expect(
+          await verifyOracleProvenance(
+            responseId: 'resp-1',
+            requestId: 'req-1',
+            answer: 'abc',
+            signatureBase64: base64Encode(List.filled(64, 0)),
+            keyId: 'wrong-key-id',
+          ),
+          isFalse);
+    });
+
+    test('untrusted-response message is non-empty in all languages', () {
+      for (final lang in ['en', 'ur', 'ar']) {
+        expect(getUntrustedResponseMessage(lang).isNotEmpty, isTrue);
+      }
     });
   });
 }

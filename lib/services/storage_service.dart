@@ -348,7 +348,21 @@ class StorageService {
   bool get offlineCache => _prefs.getBool(_keyOfflineCache) ?? true;
   set offlineCache(bool value) => _prefs.setBool(_keyOfflineCache, value);
 
-  String get serverUrl => _prefs.getString(_keyServerUrl) ?? 'http://129.154.242.136:4040';
+  /// Production Oracle (hardened Socket.IO server). Release builds must use
+  /// this unless the user explicitly configured a different server URL.
+  static const String productionOracleUrl = 'http://140.238.250.139:4040';
+
+  /// Stale pre-hardening dev default. Never used in release builds; installs
+  /// that persisted it are transparently migrated to [productionOracleUrl].
+  static const String _legacyDevOracleUrl = 'http://129.154.242.136:4040';
+
+  String get serverUrl {
+    final stored = _prefs.getString(_keyServerUrl)?.trim();
+    if (stored == null || stored.isEmpty || stored == _legacyDevOracleUrl) {
+      return productionOracleUrl;
+    }
+    return stored;
+  }
   set serverUrl(String value) => _prefs.setString(_keyServerUrl, value);
 
   // Onboarding & Scholar Identity

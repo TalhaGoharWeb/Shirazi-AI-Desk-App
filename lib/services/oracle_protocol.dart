@@ -17,7 +17,11 @@
 ///   transport) and the outage-text detector [isLimitOrOutage].
 library oracle_protocol;
 
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:cryptography/cryptography.dart';
 
 /// Allowlisted AI providers the Oracle may use for server-side BYOK
 /// inference. Anything not on this list must be rejected server-side.
@@ -112,6 +116,7 @@ enum OracleFailure {
   quotaExhausted,
   authRejected,
   insecureTransportBlocked,
+  untrustedResponse,
   unknown,
 }
 
@@ -174,12 +179,110 @@ bool hasOracleProvenance(Map<String, dynamic> result) {
 }
 
 /// Validates that an echoed request ID matches the one we sent.
-/// A mismatch means the response does not belong to our request.
+/// A missing, empty, or mismatched echo means the response does not belong
+/// to our request — it must be ignored (stray/duplicate). The hardened
+/// Oracle always echoes request_id, so the old tolerance for a missing
+/// echo has been dropped.
 bool requestIdMatches(Map<String, dynamic> result, String requestId) {
   final echoed = result['request_id']?.toString();
-  if (echoed == null || echoed.isEmpty) return true; // server may not echo yet
+  if (echoed == null || echoed.isEmpty) return false;
   return echoed == requestId;
 }
+
+/// ── Oracle response provenance (§2) ──────────────────────────────────
+/// The hardened Oracle signs every assistant answer with Ed25519. The
+/// signed message is the UTF-8 string:
+///   `${response_id}.${request_id}.${sha256hex(answer)}`
+/// where response_id is a per-answer UUID in provenance.response_id,
+/// request_id is the echoed client request ID, and sha256hex(answer) is the
+/// hex digest of SHA-256 over the UTF-8 bytes of the exact answer string.
+///
+/// The public key below is PUBLIC (SPKI DER, base64) — safe to embed and
+/// ship. Signatures arrive base64-encoded in provenance.signature.
+
+/// Expected key_id for the current Oracle signing key.
+const String oracleEd25519KeyId = 'shirazi-oracle-2026-09-24';
+
+/// SPKI DER (base64) of the Oracle's Ed25519 public key. PUBLIC — safe to embed.
+const String oracleEd25519PublicKeySpki =
+    'MCowBQYDK2VwAyEAXRz7qS3HddEhEUGnOplA8KzUd8ULHSgIKXS78QLnCZ0=';
+
+/// Extracts the raw 32-byte Ed25519 public key from an RFC 8410 SPKI DER.
+///
+/// An Ed25519 SPKI is exactly 44 bytes:
+///   SEQUENCE { SEQUENCE { OID 1.3.101.112 }, BIT STRING { 32-byte key } }
+Uint8List ed25519RawKeyFromSpki(Uint8List spki) {
+  const prefix = <int>[
+    0x30, 0x2a, // SEQUENCE, length 42
+    0x30, 0x05, // SEQUENCE, length 5
+    0x06, 0x03, 0x2b, 0x65, 0x70, // OID 1.3.101.112 (Ed25519)
+    0x03, 0x21, 0x00, // BIT STRING, length 33, 0 unused bits
+  ];
+  if (spki.length != prefix.length + 32) {
+    throw FormatException('Invalid Ed25519 SPKI length: ${spki.length}');
+  }
+  for (var i = 0; i < prefix.length; i++) {
+    if (spki[i] != prefix[i]) {
+      throw FormatException('Not an Ed25519 SPKI (prefix mismatch at byte $i)');
+    }
+  }
+  return Uint8List.fromList(spki.sublist(prefix.length));
+}
+
+/// Hex digest of SHA-256 over the UTF-8 bytes of [input].
+Future<String> sha256Hex(String input) async {
+  final digest = await Sha256().hash(utf8.encode(input));
+  return digest.bytes
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join();
+}
+
+/// Rebuilds the exact signed message for an Oracle answer:
+/// `${response_id}.${request_id}.${sha256hex(answer)}`.
+Future<String> oracleSignatureMessage({
+  required String responseId,
+  required String requestId,
+  required String answer,
+}) async {
+  final answerDigestHex = await sha256Hex(answer);
+  return '$responseId.$requestId.$answerDigestHex';
+}
+
+/// Verifies an Oracle assistant answer's Ed25519 provenance.
+///
+/// Recomputes sha256hex(answer), rebuilds the dotted signed message from
+/// the received response_id + request_id, and verifies [signatureBase64]
+/// against the embedded Oracle public key. A [keyId] that does not match
+/// the current signing key also fails. Any parse/verify error returns false
+/// (never throws) — the caller must treat false as untrusted.
+Future<bool> verifyOracleProvenance({
+  required String responseId,
+  required String requestId,
+  required String answer,
+  required String signatureBase64,
+  String? keyId,
+}) async {
+  try {
+    if (keyId != null && keyId.isNotEmpty && keyId != oracleEd25519KeyId) {
+      return false;
+    }
+    if (responseId.isEmpty || requestId.isEmpty) return false;
+    final message = await oracleSignatureMessage(
+      responseId: responseId,
+      requestId: requestId,
+      answer: answer,
+    );
+    final spki = base64Decode(oracleEd25519PublicKeySpki);
+    final rawKey = ed25519RawKeyFromSpki(Uint8List.fromList(spki));
+    final publicKey = SimplePublicKey(rawKey, type: KeyPairType.ed25519);
+    final signature =
+        Signature(base64Decode(signatureBase64), publicKey: publicKey);
+    return await Ed25519().verify(utf8.encode(message), signature: signature);
+  } catch (_) {
+    return false;
+  }
+}
+/// ─────────────────────────────────────────────────────────────────────────
 
 /// Builds the ordered provider-priority list for a server-side BYOK request.
 /// Only allowlisted providers are kept — anything else is dropped so the
@@ -264,6 +367,23 @@ bool isLimitOrOutage(Map? data, String answer) {
   }
 
   return false;
+}
+
+/// Localized notice shown when an Oracle answer fails authenticity
+/// verification (bad/missing signature). The answer is discarded and never
+/// displayed.
+String getUntrustedResponseMessage(String lang) {
+  switch (lang) {
+    case 'ur':
+      return 'شیرازی سرور کا جواب تصدیقی جانچ میں ناکام رہا ہے؛ کوئی غیر تصدیق شدہ جواب دکھایا نہیں گیا۔\n\n'
+          'آپ کا سوال محفوظ ہے — "دوبارہ کوشش" دبائیں۔';
+    case 'ar':
+      return 'تعذّر التحقق من أصالة رد خادم الشيرازي؛ لن يُعرض أي رد غير موثّق.\n\n'
+          'سؤالك محفوظ — اضغط "إعادة المحاولة".';
+    default:
+      return 'The Shirazi Oracle returned a response that failed authenticity verification — no unverified answer is shown.\n\n'
+          'Your question is preserved; tap "Retry Query".';
+  }
 }
 
 /// Localized exhaustion notice: the Oracle could not answer; the question is

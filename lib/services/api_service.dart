@@ -35,7 +35,11 @@ class ApiService {
   final bool allowInsecureHttp;
 
   ApiService({
-    this.baseUrl = 'http://129.154.242.136:4040',
+    // Production Oracle default (hardened Socket.IO server). Release builds
+    // must resolve the URL from the persisted production config
+    // (StorageService.serverUrl); this fallback must never point at a stale
+    // dev address.
+    this.baseUrl = 'http://140.238.250.139:4040',
     this.authTokenProvider,
     this.allowInsecureHttp = false,
   }) {
@@ -143,8 +147,9 @@ class ApiService {
     return null;
   }
 
-  /// Sends a research query to the live Shirazi Gateway/Core via Socket.IO real-time stream
-  /// with automated multi-tier personal BYOK failover (Primary -> Preferred -> Secondary -> Error)
+  /// Sends a research query to the live Shirazi Gateway/Core via Socket.IO
+  /// real-time stream. Socket.IO is the single canonical transport — there
+  /// is no HTTP chat endpoint on the hardened Oracle.
   Future<Map<String, dynamic>> streamRealtimeQuery({
     required String text,
     required String persona,
@@ -154,7 +159,6 @@ class ApiService {
     String? byokProvider,
     Map<String, String>? fallbackKeys,
     List<String>? providerPriority,
-    bool autoFailover = true,
     void Function(String progressMessage)? onProgress,
   }) async {
     final completer = Completer<Map<String, dynamic>>();
@@ -166,10 +170,6 @@ class ApiService {
     // app -> Oracle API -> research pipeline -> AI provider -> response -> app.
     final requestId = proto.generateRequestId();
     final socketStopwatch = Stopwatch()..start();
-
-    // Tracks whether the question was actually delivered to the Oracle over
-    // the socket channel. Used to avoid accidental duplicate submissions.
-    bool socketDelivered = false;
 
     final userKeysPayload = <String, String>{};
     if (byokProvider != null && byokKey != null && byokKey.trim().isNotEmpty) {
@@ -238,7 +238,6 @@ class ApiService {
               proto.priorityListFor(userKeysPayload, providerPriority, byokProvider),
           'channel': 'mobile_app',
         });
-        socketDelivered = true;
       });
 
       socket.on('agent-progress', (data) {
@@ -253,84 +252,157 @@ class ApiService {
         }
       });
 
-      // Pure, unit-tested outage detector (oracle_protocol).
-      bool isLimitOrOutage(dynamic data, String answer) =>
-          proto.isLimitOrOutage(data is Map ? data : null, answer);
+      socket.on('assistant-message', (data) async {
+        if (completer.isCompleted) return;
 
-      socket.on('assistant-message', (data) {
+        String answer = '';
+        List<String> citations = [];
+        String? echoedRequestId;
+        Map<String, dynamic>? provenance;
+        if (data is Map) {
+          answer = data['answer']?.toString() ?? '';
+          final rawCitations = data['citations'];
+          if (rawCitations is List) {
+            citations = rawCitations.map((c) => c.toString()).toList();
+          }
+          echoedRequestId = data['request_id']?.toString();
+          final prov = data['provenance'];
+          if (prov is Map) {
+            provenance = Map<String, dynamic>.from(prov);
+          }
+        } else if (data is String) {
+          answer = data;
+        }
+
+        // §9 (strict): the hardened Oracle always echoes request_id. A
+        // message whose request_id is missing or foreign is stray/duplicate
+        // and must be ignored — never treated as our answer.
+        if (!proto.requestIdMatches(
+            {'request_id': echoedRequestId}, requestId)) {
+          debugPrint(
+              '[ApiService] Ignoring assistant-message with missing/foreign request_id (stray response).');
+          return;
+        }
+
+        // Pure, unit-tested outage detector (oracle_protocol).
+        final isOutage =
+            proto.isLimitOrOutage(data is Map ? data : null, answer);
+        final isMadhhabMismatch = madhhab != null && madhhab.isNotEmpty
+            ? MadhhabDetector.isMismatched(answer, madhhab)
+            : false;
+
+        if (isMadhhabMismatch) {
+          debugPrint('[ApiService] Server cached answer rejected: madhhab mismatch (requested $madhhab).');
+          completer.completeError('Server returned answer with madhhab mismatch (requested $madhhab)');
+          return;
+        }
+
+        if (isOutage) {
+          // The Oracle's research pipeline ran but its inference capacity is
+          // exhausted (status:'ERROR' + QUOTA_EXHAUSTED, or the dedicated
+          // 'quota-exhausted' event below). This is NOT answered by any
+          // other AI: we surface a structured quota state so the UI can
+          // offer an explicit, consent-based retry THROUGH the Oracle with
+          // the user's key.
+          completer.complete(_quotaExhaustedResult(
+            requestId: requestId,
+            transport: 'socket.io',
+            oracleKeysUsed: userKeysPayload.isNotEmpty,
+            latencyMs: socketStopwatch.elapsedMilliseconds,
+            retryAfterHint:
+                data is Map ? data['retry_after_hint']?.toString() : null,
+            canUseByok: data is Map ? _asBool(data['can_use_byok']) : null,
+          ));
+          return;
+        }
+
+        if (answer.isEmpty) return; // keep waiting for the real answer
+
+        // ── Response provenance (§2) ─────────────────────────────────
+        // The hardened Oracle signs every answer with Ed25519 over
+        // `${response_id}.${request_id}.${sha256hex(answer)}`. An answer
+        // that fails verification — or carries no signature in a release
+        // build — is untrusted: it is discarded and never displayed.
+        final signature = provenance?['signature']?.toString();
+        final responseId = provenance?['response_id']?.toString();
+        final keyId = provenance?['key_id']?.toString();
+        final signatureOk = signature != null &&
+                signature.isNotEmpty &&
+                responseId != null &&
+                responseId.isNotEmpty
+            ? await proto.verifyOracleProvenance(
+                responseId: responseId,
+                requestId: requestId,
+                answer: answer,
+                signatureBase64: signature,
+                keyId: keyId,
+              )
+            : false;
+        if (!signatureOk) {
+          if (signature == null && kDebugMode) {
+            // Local-dev only: unsigned Oracle responses are accepted with a
+            // loud log so the UI can be exercised against a dev server.
+            debugPrint(
+                '[ApiService] DEBUG build: accepting unsigned assistant-message (release builds reject it).');
+          } else {
+            debugPrint(
+                '[ApiService] REJECTED untrusted assistant-message (signature ${signature == null ? 'missing' : 'invalid'}).');
+            completer.complete(_oracleErrorResult(
+              requestId: requestId,
+              transport: 'socket.io',
+              message: proto.getUntrustedResponseMessage(lang),
+              failure: proto.OracleFailure.untrustedResponse,
+            ));
+            return;
+          }
+        }
+
+        completer.complete({
+          'status': 'SUCCESS',
+          // ── Server identity / provenance (§2) ──────────────────────
+          // The answer's authenticity is established by the Ed25519
+          // signature verified above (response_id + request_id + answer
+          // digest), signed by the Oracle key shirazi-oracle-2026-09-24.
+          // These fields are the client-observed transport provenance of
+          // that verified answer; nothing is fabricated here.
+          'source': 'shirazi-oracle',
+          'request_id': requestId,
+          'response_id': responseId,
+          'provenance_verified': signatureOk,
+          'transport': 'socket.io',
+          'oracle_url': baseUrl,
+          'answered_at': DateTime.now().toUtc().toIso8601String(),
+          'latency_ms': socketStopwatch.elapsedMilliseconds,
+          // ──────────────────────────────────────────────────────────
+          'answer': answer,
+          'citations': citations,
+          'isRealtimeStream': true,
+          'byokProvider': 'Shirazi Core Agent (Live)',
+          'isByokFallback': false,
+        });
+      });
+
+      // Quota exhaustion (hardened protocol): the server emits
+      // 'quota-exhausted' {status:'QUOTA_EXHAUSTED', request_id,
+      // retry_after_hint, can_use_byok}. Mapped to the same structured
+      // result as the in-band quota shape above.
+      socket.on('quota-exhausted', (data) {
         if (!completer.isCompleted) {
-          String answer = '';
-          List<String> citations = [];
+          String? hint;
+          bool? byok;
           if (data is Map) {
-            answer = data['answer']?.toString() ?? '';
-            final rawCitations = data['citations'];
-            if (rawCitations is List) {
-              citations = rawCitations.map((c) => c.toString()).toList();
-            }
-          } else if (data is String) {
-            answer = data;
+            hint = data['retry_after_hint']?.toString();
+            byok = _asBool(data['can_use_byok']);
           }
-
-          final isOutage = isLimitOrOutage(data, answer);
-          final isMadhhabMismatch = madhhab != null && madhhab.isNotEmpty
-              ? MadhhabDetector.isMismatched(answer, madhhab)
-              : false;
-          // §9: if the server echoes a request ID, it must match ours —
-          // otherwise this response does not belong to our request.
-          final requestIdOk = data is Map
-              ? proto.requestIdMatches(data, requestId)
-              : true;
-
-          if (answer.isNotEmpty &&
-              !isOutage &&
-              !isMadhhabMismatch &&
-              requestIdOk) {
-            completer.complete({
-              'status': 'SUCCESS',
-              // ── Server identity / provenance (§5) ──────────────────────
-              // These fields are CLIENT-OBSERVED transport provenance: they
-              // prove this answer arrived over the Oracle channel. The server
-              // does not currently issue request/response IDs, so none are
-              // fabricated here.
-              'source': 'shirazi-oracle',
-              'request_id': requestId,
-              'transport': 'socket.io',
-              'oracle_url': baseUrl,
-              'answered_at': DateTime.now().toUtc().toIso8601String(),
-              'latency_ms': socketStopwatch.elapsedMilliseconds,
-              // ──────────────────────────────────────────────────────────
-              'answer': answer,
-              'citations': citations,
-              'isRealtimeStream': true,
-              'byokProvider': 'Shirazi Core Agent (Live)',
-              'isByokFallback': false,
-            });
-          } else if (isMadhhabMismatch) {
-            debugPrint('[ApiService] Server cached answer rejected: madhhab mismatch (requested $madhhab).');
-            completer.completeError('Server returned answer with madhhab mismatch (requested $madhhab)');
-          } else if (isOutage) {
-            // The Oracle's research pipeline ran but its inference capacity is
-            // exhausted. This is NOT answered by any other AI: we surface a
-            // structured quota state so the UI can offer an explicit,
-            // consent-based retry THROUGH the Oracle with the user's key.
-            completer.complete({
-              'status': 'QUOTA_EXHAUSTED',
-              'source': 'shirazi-oracle',
-              'request_id': requestId,
-              'transport': 'socket.io',
-              'oracle_url': baseUrl,
-              'answered_at': DateTime.now().toUtc().toIso8601String(),
-              'latency_ms': socketStopwatch.elapsedMilliseconds,
-              'answer': '',
-              'citations': <String>[],
-              'isRealtimeStream': true,
-              'oracle_keys_used': userKeysPayload.isNotEmpty,
-              'canRetry': true,
-              'canRetryWithByok': userKeysPayload.isEmpty,
-              'isByokFallback': false,
-              'byokProvider': null,
-            });
-          }
+          debugPrint('[ApiService] Oracle quota exhausted (retry hint: $hint).');
+          completer.complete(_quotaExhaustedResult(
+            requestId: requestId,
+            transport: 'socket.io',
+            oracleKeysUsed: userKeysPayload.isNotEmpty,
+            latencyMs: socketStopwatch.elapsedMilliseconds,
+            retryAfterHint: hint,
+            canUseByok: byok,
+          ));
         }
       });
 
@@ -380,7 +452,7 @@ class ApiService {
       socket.dispose();
       return result;
     } catch (e) {
-      debugPrint('Primary Shirazi socket attempt yielded: $e. Checking HTTP transport alternative...');
+      debugPrint('[ApiService] Shirazi Oracle socket attempt failed: $e. Falling back to verified fatwa library probe...');
     } finally {
       timeoutTimer?.cancel();
       try {
@@ -389,92 +461,11 @@ class ApiService {
       } catch (_) {}
     }
 
-    // Step 2: HTTP transport alternative — SAME Oracle, SAME pipeline.
-    // Reached only when the socket.io transport itself failed (connect error),
-    // i.e. the question was never delivered. The user's keys travel to the
-    // Shirazi Oracle Server, which runs its full Shamela research / retrieval /
-    // verification pipeline using them for inference. The app NEVER calls a
-    // provider API directly.
-    // NOTE: this step is skipped after a delivered-but-unanswered socket
-    // attempt (timeout) to avoid accidentally submitting the same research
-    // question twice — the user retries explicitly instead (§13).
-    if (socketDelivered == false && autoFailover) {
-      if (onProgress != null) {
-        onProgress('Socket channel unavailable — trying Shirazi Oracle over HTTP...');
-      }
 
-      try {
-        final httpRes = await http.post(
-          Uri.parse('$baseUrl/api/chat'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'request_id': requestId,
-            'text': text,
-            'persona': persona,
-            'lang': lang,
-            'madhhab': madhhab,
-            'user_keys': userKeysPayload,
-            'provider_priority':
-                proto.priorityListFor(userKeysPayload, providerPriority, byokProvider),
-            'channel': 'mobile_app',
-          }),
-        ).timeout(const Duration(seconds: 90));
-
-        if (httpRes.statusCode == 200) {
-          final data = jsonDecode(httpRes.body) as Map<String, dynamic>;
-          if (data['status'] == 'SUCCESS' && data['answer'] != null) {
-            final answer = data['answer'].toString();
-            // NOTE: the socket-scope `isLimitOrOutage` local is out of scope
-            // here — call the pure protocol detector directly (§6).
-            if (answer.isNotEmpty && !proto.isLimitOrOutage(data, answer)) {
-              return {
-                'status': 'SUCCESS',
-                'source': 'shirazi-oracle',
-                'request_id': requestId,
-                'transport': 'http',
-                'oracle_url': baseUrl,
-                'answered_at': DateTime.now().toUtc().toIso8601String(),
-                'answer': answer,
-                'citations': data['citations'] ?? <String>[],
-                'madhhab': data['madhhab'],
-                'requires_madhhab_selection': data['requires_madhhab_selection'] ?? false,
-                'isRealtimeStream': false,
-                'isByokFallback': false,
-                'byokProvider': userKeysPayload.isNotEmpty
-                    ? 'Shirazi Oracle (personal key via pipeline)'
-                    : 'Shirazi Oracle (HTTP)',
-              };
-            }
-            // Oracle answered but its inference capacity is exhausted.
-            return _quotaExhaustedResult(
-              requestId: requestId,
-              transport: 'http',
-              oracleKeysUsed: userKeysPayload.isNotEmpty,
-            );
-          }
-        } else if (httpRes.statusCode == 429) {
-          debugPrint('[ApiService] Oracle HTTP 429: inference quota exhausted.');
-          return _quotaExhaustedResult(
-            requestId: requestId,
-            transport: 'http',
-            oracleKeysUsed: userKeysPayload.isNotEmpty,
-          );
-        } else if (httpRes.statusCode == 401 || httpRes.statusCode == 403) {
-          debugPrint('[ApiService] Oracle HTTP ${httpRes.statusCode}: auth rejected.');
-          return _oracleErrorResult(
-            requestId: requestId,
-            transport: 'http',
-            message: _getAuthErrorMessage(lang),
-          );
-        } else if (httpRes.statusCode >= 500) {
-          debugPrint('[ApiService] Oracle HTTP ${httpRes.statusCode}: server error.');
-        }
-      } on TimeoutException {
-        debugPrint('[ApiService] Oracle HTTP /api/chat timed out.');
-      } catch (e) {
-        debugPrint('[ApiService] Oracle HTTP fallback failed: $e');
-      }
-    }
+    // REMOVED (old Step 2): HTTP POST to `$baseUrl/api/chat` — the hardened
+    // Oracle exposes NO HTTP chat route (it 404s). Socket.IO is the single
+    // canonical transport; per the hardening plan the fallback is removed,
+    // not redirected to an invented server endpoint.
 
     // REMOVED (Step 2b): _executeDirectClientByok — the old direct client-side
     // calls to Groq / Gemini / OpenRouter REST APIs. That path answered the
@@ -484,7 +475,7 @@ class ApiService {
     // User keys are now ONLY ever sent to the Shirazi Oracle Server, which
     // runs its own pipeline with them for inference (§7).
 
-    // Step 3: Probe server's canonical fatwa library for matching verified inquiry
+    // Step 2: Probe server's canonical fatwa library for matching verified inquiry
     final target = FiqhQueryAnalyzer.analyze(text, lang: lang).copyWith(
       requestedMadhhab: madhhab,
     );
@@ -498,7 +489,7 @@ class ApiService {
       return serverFatwa;
     }
 
-    // Step 4: Graceful Failure Protocol (Requirement 6: Never fabricate an answer)
+    // Step 3: Graceful Failure Protocol (Requirement 6: Never fabricate an answer)
     // The Oracle could not answer and no verified cached fatwa matched. We
     // return an honest, localized exhaustion notice — NEVER a substituted AI
     // answer. The user's question is preserved for retry.
@@ -530,12 +521,19 @@ class ApiService {
   /// Structured quota-exhaustion result. The Oracle ran but its inference
   /// capacity is spent. No answer is fabricated; the UI offers an explicit,
   /// consent-based retry through the Oracle pipeline.
+  ///
+  /// [retryAfterHint] and [canUseByok] come from the server's
+  /// `quota-exhausted` event (or the in-band quota payload) when present.
   Map<String, dynamic> _quotaExhaustedResult({
     required String requestId,
     required String transport,
     required bool oracleKeysUsed,
+    int? latencyMs,
+    String? retryAfterHint,
+    bool? canUseByok,
   }) {
-    return {
+    final canRetryWithByok = !oracleKeysUsed && (canUseByok ?? true);
+    final result = <String, dynamic>{
       'status': 'QUOTA_EXHAUSTED',
       'source': 'shirazi-oracle',
       'request_id': requestId,
@@ -544,12 +542,35 @@ class ApiService {
       'answered_at': DateTime.now().toUtc().toIso8601String(),
       'answer': '',
       'citations': <String>[],
+      'isRealtimeStream': true,
       'oracle_keys_used': oracleKeysUsed,
       'canRetry': true,
-      'canRetryWithByok': !oracleKeysUsed,
+      'canRetryWithByok': canRetryWithByok,
       'isByokFallback': false,
       'byokProvider': null,
     };
+    if (latencyMs != null) {
+      result['latency_ms'] = latencyMs;
+    }
+    if (retryAfterHint != null && retryAfterHint.isNotEmpty) {
+      result['retry_after_hint'] = retryAfterHint;
+    }
+    if (canUseByok != null) {
+      // Server's hint: a personal BYOK key would work for this request.
+      result['can_use_byok'] = canUseByok;
+    }
+    return result;
+  }
+
+  /// Lenient bool coercion for server payload fields (bool or "true"/"false").
+  static bool? _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is String) {
+      final s = value.trim().toLowerCase();
+      if (s == 'true') return true;
+      if (s == 'false') return false;
+    }
+    return null;
   }
 
   /// Structured Oracle error result (auth rejection, server error, ...).
@@ -734,7 +755,6 @@ class ApiService {
     String? madhhab,
     String? byokKey,
     String? byokProvider,
-    bool autoFailover = true,
   }) async {
     return streamRealtimeQuery(
       text: text,
@@ -743,7 +763,6 @@ class ApiService {
       madhhab: madhhab,
       byokKey: byokKey,
       byokProvider: byokProvider,
-      autoFailover: autoFailover,
     );
   }
 

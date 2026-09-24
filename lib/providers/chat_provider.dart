@@ -395,7 +395,6 @@ class ChatProvider with ChangeNotifier {
       byokProvider: prefProv,
       fallbackKeys: fallbackKeys,
       providerPriority: providerPriority,
-      autoFailover: storageService.autoFailover,
       onProgress: (progressMsg) {
         final currentSteps = List<ReasoningStep>.from(_currentReasoningSteps);
         final updatedSteps = currentSteps.map((s) => ReasoningStep(
