@@ -18,7 +18,6 @@ class AdminAuditLogScreen extends StatefulWidget {
 
 class _AdminAuditLogScreenState extends State<AdminAuditLogScreen> {
   int _selectedTab = 0; // 0: Multi-User Conversations, 1: Server Cluster Fatwas
-  String _selectedMadhhab = 'All';
   final TextEditingController _searchController = TextEditingController();
 
   @override

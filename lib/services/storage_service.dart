@@ -71,7 +71,6 @@ class StorageService {
 
   /// In-memory cache of BYOK keys, populated by [loadSecureKeys].
   final Map<String, String> _keyCache = {};
-  bool _secureKeysLoaded = false;
 
   static const List<String> _keyProviders = [
     'gemini',
@@ -146,7 +145,6 @@ class StorageService {
       }
       _keyCache[p] = value;
     }
-    _secureKeysLoaded = true;
   }
 
   /// Writes a BYOK key through to platform secure storage and the cache.

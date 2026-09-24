@@ -286,7 +286,7 @@ class ApiService {
       }
       socket = IO.io(endpoint.baseUrl, builder.build());
       // Track the in-flight query so [cancelQuery] can reach it.
-      _activeSockets[requestId] = socket!;
+      _activeSockets[requestId] = socket;
       _activeCompleters[requestId] = completer;
 
       socket.onConnect((_) {
