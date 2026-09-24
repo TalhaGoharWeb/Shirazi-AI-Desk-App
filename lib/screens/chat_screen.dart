@@ -202,6 +202,8 @@ class _ChatScreenState extends State<ChatScreen> {
               onMadhhabChanged: chat.setMadhhab,
               selectedPersona: chat.selectedPersona,
               onPersonaChanged: chat.setPersona,
+              selectedAnswerMode: chat.answerMode,
+              onAnswerModeChanged: chat.setAnswerMode,
             ),
           ),
         ],

@@ -29,6 +29,9 @@ class ChatProvider with ChangeNotifier {
   List<ReasoningStep> _currentReasoningSteps = [];
   String _selectedMadhhab = 'Hanafi';
   String _selectedPersona = 'muhaqqiq';
+  /// Answer mode: 'auto' (server decides), 'quick' (fast RAG), 'deep' (full research).
+  /// Chit-chat is auto-detected by the server; no explicit toggle needed.
+  String _answerMode = 'auto';
   int? _serverLatencyMs = 14;
 
   /// Pending query text, stored when waiting for madhhab clarification.
@@ -53,6 +56,7 @@ class ChatProvider with ChangeNotifier {
   List<ReasoningStep> get currentReasoningSteps => _currentReasoningSteps;
   String get selectedMadhhab => _selectedMadhhab;
   String get selectedPersona => _selectedPersona;
+  String get answerMode => _answerMode;
   int? get serverLatencyMs => _serverLatencyMs;
 
   void setMadhhab(String madhhab) {
@@ -62,6 +66,13 @@ class ChatProvider with ChangeNotifier {
 
   void setPersona(String persona) {
     _selectedPersona = persona;
+    notifyListeners();
+  }
+
+  /// Sets the answer mode ('auto', 'quick', 'deep'). The server auto-detects
+  /// chit-chat; 'quick' forces fast RAG, 'deep' forces full multi-agent research.
+  void setAnswerMode(String mode) {
+    _answerMode = mode;
     notifyListeners();
   }
 
@@ -395,6 +406,7 @@ class ChatProvider with ChangeNotifier {
       persona: _selectedPersona,
       lang: queryLang,
       madhhab: effectiveMadhhab,
+      answerMode: _answerMode,
       byokKey: primaryKey,
       byokProvider: prefProv,
       fallbackKeys: fallbackKeys,

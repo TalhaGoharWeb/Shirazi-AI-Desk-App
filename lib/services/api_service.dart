@@ -215,6 +215,7 @@ class ApiService {
     String? byokProvider,
     Map<String, String>? fallbackKeys,
     List<String>? providerPriority,
+    String? answerMode,
     void Function(String progressMessage)? onProgress,
     // Called with the generated request_id so the caller (e.g. ChatProvider)
     // can cancel this exact query via [cancelQuery].
@@ -297,6 +298,7 @@ class ApiService {
           'persona': persona,
           'lang': lang,
           'madhhab': madhhab,
+          'answer_mode': answerMode,
           'user_keys': userKeysPayload,
           'provider_priority':
               proto.priorityListFor(userKeysPayload, providerPriority, byokProvider),

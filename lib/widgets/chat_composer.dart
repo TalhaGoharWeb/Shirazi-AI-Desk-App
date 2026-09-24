@@ -12,6 +12,8 @@ class ChatComposer extends StatefulWidget {
   final ValueChanged<String> onMadhhabChanged;
   final String selectedPersona;
   final ValueChanged<String> onPersonaChanged;
+  final String selectedAnswerMode;
+  final ValueChanged<String> onAnswerModeChanged;
 
   const ChatComposer({
     super.key,
@@ -22,6 +24,8 @@ class ChatComposer extends StatefulWidget {
     required this.onMadhhabChanged,
     required this.selectedPersona,
     required this.onPersonaChanged,
+    required this.selectedAnswerMode,
+    required this.onAnswerModeChanged,
   });
 
   @override
@@ -190,6 +194,71 @@ class _ChatComposerState extends State<ChatComposer> {
                     const PopupMenuItem(value: 'muhaqqiq', child: Text('Muhaqqiq (Academic Investigator)')),
                     const PopupMenuItem(value: 'mufti', child: Text('Mufti (Clear Jurisprudential Rulings)')),
                     const PopupMenuItem(value: 'talib', child: Text('Talib al-Ilm (Educational Foundations)')),
+                  ],
+                ),
+                const SizedBox(width: 8),
+
+                // Answer mode selector: Auto / Quick (fast RAG) / Deep (full research).
+                // Chit-chat is auto-detected by the server.
+                PopupMenuButton<String>(
+                  initialValue: widget.selectedAnswerMode,
+                  color: ShiraziColors.surfaceContainerLowest,
+                  onSelected: widget.onAnswerModeChanged,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ShiraziColors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0x33D4AF37)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.bolt_outlined, size: 12, color: ShiraziColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.selectedAnswerMode == 'quick'
+                              ? (strings.lang == 'ur' ? 'فوری' : strings.lang == 'ar' ? 'سريع' : 'Quick')
+                              : widget.selectedAnswerMode == 'deep'
+                                  ? (strings.lang == 'ur' ? 'گہری تحقیق' : strings.lang == 'ar' ? 'بحث عميق' : 'Deep')
+                                  : (strings.lang == 'ur' ? 'خودکار' : strings.lang == 'ar' ? 'تلقائي' : 'Auto'),
+                          style: ShiraziTypography.dynamicLabel(
+                            strings.lang,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: ShiraziColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.arrow_drop_down, size: 14, color: ShiraziColors.outline),
+                      ],
+                    ),
+                  ),
+                  itemBuilder: (ctx) => [
+                    PopupMenuItem(
+                      value: 'auto',
+                      child: Text(strings.lang == 'ur'
+                          ? 'خودکار (سوال کے مطابق)'
+                          : strings.lang == 'ar'
+                              ? 'تلقائي (حسب السؤال)'
+                              : 'Auto (decides per question)'),
+                    ),
+                    PopupMenuItem(
+                      value: 'quick',
+                      child: Text(strings.lang == 'ur'
+                          ? 'فوری (تیز جواب، حوالوں کے ساتھ)'
+                          : strings.lang == 'ar'
+                              ? 'سريع (إجابة سريعة مع مصادر)'
+                              : 'Quick (fast answer with sources)'),
+                    ),
+                    PopupMenuItem(
+                      value: 'deep',
+                      child: Text(strings.lang == 'ur'
+                          ? 'گہری تحقیق (مکمل تحقیقی عمل)'
+                          : strings.lang == 'ar'
+                              ? 'بحث عميق (تحقيق شامل)'
+                              : 'Deep (full research pipeline)'),
+                    ),
                   ],
                 ),
               ],
