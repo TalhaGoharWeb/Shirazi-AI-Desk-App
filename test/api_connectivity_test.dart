@@ -6,13 +6,13 @@ import 'package:shirazi_app/services/api_service.dart';
 
 void main() {
   test('Shirazi API Health & Endpoints Probe', () async {
-    final healthRes = await http.get(Uri.parse('http://140.238.250.139:4040/api/health'));
+    final healthRes = await http.get(Uri.parse('https://shirazi-oracle.140-238-250-139.sslip.io/api/health'));
     print('HEALTH STATUS: ${healthRes.statusCode} - ${healthRes.body}');
     expect(healthRes.statusCode, 200);
 
     print('Connecting Socket.IO to 140.238.250.139:4040...');
     final completer = Completer<void>();
-    final socket = IO.io('http://140.238.250.139:4040', IO.OptionBuilder()
+    final socket = IO.io('https://shirazi-oracle.140-238-250-139.sslip.io', IO.OptionBuilder()
         .setTransports(['websocket', 'polling'])
         .enableForceNew()
         .setTimeout(5000)
@@ -36,7 +36,7 @@ void main() {
   });
 
   test('Shirazi Online Server Live Fatwas Retrieval Test', () async {
-    final apiService = ApiService(baseUrl: 'http://140.238.250.139:4040');
+    final apiService = ApiService(baseUrl: 'https://shirazi-oracle.140-238-250-139.sslip.io');
     final fatwas = await apiService.fetchRealtimeFatwas(fetchFullDetails: false);
     print('Fetched ${fatwas.length} fatwas from live server');
     expect(fatwas.isNotEmpty, true);
