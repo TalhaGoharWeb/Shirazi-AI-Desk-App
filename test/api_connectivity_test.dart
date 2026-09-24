@@ -10,7 +10,7 @@ void main() {
     print('HEALTH STATUS: ${healthRes.statusCode} - ${healthRes.body}');
     expect(healthRes.statusCode, 200);
 
-    print('Connecting Socket.IO to 140.238.250.139:4040...');
+    print('Connecting Socket.IO to shirazi-oracle.140-238-250-139.sslip.io...');
     final completer = Completer<void>();
     final socket = IO.io('https://shirazi-oracle.140-238-250-139.sslip.io', IO.OptionBuilder()
         .setTransports(['websocket', 'polling'])

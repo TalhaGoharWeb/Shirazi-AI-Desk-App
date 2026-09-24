@@ -15,7 +15,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final storageService = StorageService(prefs);
-    final apiService = ApiService(baseUrl: 'http://140.238.250.139:4040');
+    final apiService = ApiService(baseUrl: 'https://shirazi-oracle.140-238-250-139.sslip.io');
 
     final research = ResearchProvider(
       apiService: apiService,
