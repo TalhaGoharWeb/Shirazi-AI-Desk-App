@@ -39,7 +39,7 @@ class ApiService {
     // must resolve the URL from the persisted production config
     // (StorageService.serverUrl); this fallback must never point at a stale
     // dev address.
-    this.baseUrl = 'http://140.238.250.139:4040',
+    this.baseUrl = 'https://shirazi-oracle.140-238-250-139.sslip.io',
     this.authTokenProvider,
     this.allowInsecureHttp = false,
   }) {

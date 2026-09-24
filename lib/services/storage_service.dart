@@ -350,7 +350,7 @@ class StorageService {
 
   /// Production Oracle (hardened Socket.IO server). Release builds must use
   /// this unless the user explicitly configured a different server URL.
-  static const String productionOracleUrl = 'http://140.238.250.139:4040';
+  static const String productionOracleUrl = 'https://shirazi-oracle.140-238-250-139.sslip.io';
 
   /// Stale pre-hardening dev default. Never used in release builds; installs
   /// that persisted it are transparently migrated to [productionOracleUrl].
