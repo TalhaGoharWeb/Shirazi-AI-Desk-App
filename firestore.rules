@@ -74,6 +74,17 @@ service cloud.firestore {
         && noPrivilegeFields();
     }
 
+    // Update variant: only the *changed* fields must be whitelisted.
+    // A document written by an older client may still carry a legacy
+    // privilege field (e.g. `role`); it may persist untouched, but no
+    // client can add or modify one — any such change lands in
+    // affectedKeys() and is rejected, since privilege fields are absent
+    // from allowedProfileFields().
+    function validProfileUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(allowedProfileFields());
+    }
+
     // 1. User Profiles — owner-writable for whitelisted fields only.
     //    Admins (claims-verified) may read any profile; only the super admin
     //    may update/delete profiles or touch privilege state (via claims,
@@ -81,7 +92,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) && validProfileWrite();
-      allow update: if (isOwner(uid) && validProfileWrite()) || isSuperAdmin();
+      allow update: if (isOwner(uid) && validProfileUpdate()) || isSuperAdmin();
       allow delete: if isSuperAdmin();
 
       // Private per-user vault (BYOK API keys, etc.) — OWNER ONLY.
@@ -96,7 +107,7 @@ service cloud.firestore {
     match /scholars/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) && validProfileWrite();
-      allow update: if (isOwner(uid) && validProfileWrite()) || isSuperAdmin();
+      allow update: if (isOwner(uid) && validProfileUpdate()) || isSuperAdmin();
       allow delete: if isSuperAdmin();
 
       match /{allSubcollections=**} {
