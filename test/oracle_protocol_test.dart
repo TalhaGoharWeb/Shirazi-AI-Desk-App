@@ -228,7 +228,10 @@ void main() {
     });
     test('priorityListFor drops non-allowlisted entries', () {
       final list = priorityListFor(
-        {'groq': 'k1', 'evil': 'k2'},
+        [
+          {'provider': 'groq', 'key': 'k1'},
+          {'provider': 'evil', 'key': 'k2'},
+        ],
         ['evil', 'gemini'],
         'attacker.example',
       );
@@ -239,7 +242,10 @@ void main() {
     });
     test('priorityListFor preserves explicit order then payload keys', () {
       final list = priorityListFor(
-        {'groq': 'k1', 'gemini': 'k2'},
+        [
+          {'provider': 'groq', 'key': 'k1'},
+          {'provider': 'gemini', 'key': 'k2'},
+        ],
         ['openrouter'],
         null,
       );

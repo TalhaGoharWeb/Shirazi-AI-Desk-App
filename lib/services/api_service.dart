@@ -231,22 +231,23 @@ class ApiService {
     onRequestId?.call(requestId);
     final socketStopwatch = Stopwatch()..start();
 
-    final userKeysPayload = <String, String>{};
-    if (byokProvider != null && byokKey != null && byokKey.trim().isNotEmpty) {
-      final p = byokProvider.trim().toLowerCase();
+    // Canonical Oracle BYOK contract: [{provider, key}]. The server also
+    // accepts the legacy {provider: key} map, but new builds send the list.
+    final userKeysPayload = <Map<String, String>>[];
+    void addKey(String provider, String key) {
+      final p = provider.trim().toLowerCase();
+      if (key.trim().isEmpty) return;
       if (proto.isSupportedByokProvider(p)) {
-        userKeysPayload[p] = byokKey.trim();
+        userKeysPayload.add({'provider': p, 'key': key.trim()});
       } else {
         debugPrint('[ApiService] Rejected non-allowlisted BYOK provider: $p');
       }
     }
+    if (byokProvider != null && byokKey != null) {
+      addKey(byokProvider, byokKey);
+    }
     if (fallbackKeys != null) {
-      fallbackKeys.forEach((k, v) {
-        final p = k.trim().toLowerCase();
-        if (v.trim().isNotEmpty && proto.isSupportedByokProvider(p)) {
-          userKeysPayload[p] = v.trim();
-        }
-      });
+      fallbackKeys.forEach((k, v) => addKey(k, v));
     }
 
     // ── HTTPS enforcement (§1, §5) ──────────────────────────────────────
@@ -658,7 +659,7 @@ class ApiService {
   /// Builds the ordered provider-priority list for a server-side BYOK request.
   /// Delegates to the pure, unit-tested implementation in oracle_protocol.
   static List<String> priorityListFor(
-    Map<String, String> userKeysPayload,
+    List<Map<String, String>> userKeysPayload,
     List<String>? providerPriority,
     String? byokProvider,
   ) =>

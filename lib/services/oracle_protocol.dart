@@ -288,7 +288,7 @@ Future<bool> verifyOracleProvenance({
 /// Only allowlisted providers are kept — anything else is dropped so the
 /// Oracle can never be steered toward an arbitrary endpoint.
 List<String> priorityListFor(
-  Map<String, String> userKeysPayload,
+  List<Map<String, String>> userKeysPayload,
   List<String>? providerPriority,
   String? byokProvider,
 ) {
@@ -310,8 +310,8 @@ List<String> priorityListFor(
   } else {
     add(byokProvider);
   }
-  for (final k in userKeysPayload.keys) {
-    add(k);
+  for (final e in userKeysPayload) {
+    add(e['provider']);
   }
   return priorityList;
 }
