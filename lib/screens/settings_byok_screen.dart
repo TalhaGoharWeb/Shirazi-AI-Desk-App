@@ -5,6 +5,7 @@ import '../core/theme/shirazi_typography.dart';
 import '../core/constants/shirazi_spacing.dart';
 import '../core/localization/app_strings.dart';
 import '../providers/settings_provider.dart';
+import '../services/firebase_auth_service.dart';
 import 'admin_health_screen.dart';
 import 'welcome_screen.dart';
 import 'sign_in_screen.dart';
@@ -450,12 +451,21 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                             tooltip: 'Remove key',
-                            onPressed: () {
+                            onPressed: () async {
+                              final providerName =
+                                  settings.selectedProvider.toUpperCase();
                               settings.deleteKey(settings.selectedProvider);
                               _keyController.clear();
+                              // Propagate the deletion to the cloud vault so a
+                              // removed key is not resurrected on next sign-in.
+                              await context
+                                  .read<FirebaseAuthService>()
+                                  .syncApiKeysToCloud();
+                              if (!context.mounted) return;
+                              final strings = AppStrings.of(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('${settings.selectedProvider.toUpperCase()} key removed securely'),
+                                  content: Text(strings.apiKeyRemoved(providerName)),
                                   duration: const Duration(seconds: 2),
                                 ),
                               );
@@ -600,11 +610,24 @@ class _SettingsByokScreenState extends State<SettingsByokScreen> {
                           // actually landed in secure device storage.
                           final ok = await settings.saveCurrentKey(clean);
                           if (!context.mounted) return;
+                          final strings = AppStrings.of(context);
+                          var message = ok
+                              ? strings.apiKeySavedLocal
+                              : '${strings.saveFailedLabel}: ${settings.testStatus}';
+                          if (ok) {
+                            // Back the key up to the user's private cloud
+                            // vault so it survives sign-out / reinstall.
+                            final cloudOk = await context
+                                .read<FirebaseAuthService>()
+                                .syncApiKeysToCloud();
+                            if (!context.mounted) return;
+                            message = cloudOk
+                                ? strings.apiKeySavedCloud
+                                : strings.apiKeySavedLocalOnly;
+                          }
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(ok
-                                  ? 'API Key saved to secure device storage'
-                                  : 'Save failed: ${settings.testStatus}'),
+                              content: Text(message),
                               duration: const Duration(seconds: 2),
                             ),
                           );

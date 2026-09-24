@@ -1185,6 +1185,41 @@ class AppStrings {
       default: return 'Error';
     }
   }
+  String get apiKeySavedLocal {
+    switch (lang) {
+      case 'ar': return 'تم حفظ مفتاح API في التخزين الآمن للجهاز';
+      case 'ur': return 'API کلید ڈیوائس کے محفوظ اسٹوریج میں محفوظ ہو گئی';
+      default: return 'API key saved to secure device storage';
+    }
+  }
+  String get apiKeySavedCloud {
+    switch (lang) {
+      case 'ar': return 'تم حفظ مفتاح API ونسخه احتياطيًا في مخزنك السحابي الخاص';
+      case 'ur': return 'API کلید محفوظ ہو گئی اور آپ کے نجی کلاؤڈ والٹ میں بیک اپ بھی ہو گیا';
+      default: return 'API key saved and backed up to your private cloud vault';
+    }
+  }
+  String get apiKeySavedLocalOnly {
+    switch (lang) {
+      case 'ar': return 'تم الحفظ على هذا الجهاز — تعذر النسخ الاحتياطي السحابي';
+      case 'ur': return 'اس ڈیوائس پر محفوظ ہو گئی — کلاؤڈ بیک اپ دستیاب نہیں';
+      default: return 'Saved on this device — cloud backup unavailable';
+    }
+  }
+  String get saveFailedLabel {
+    switch (lang) {
+      case 'ar': return 'فشل الحفظ';
+      case 'ur': return 'محفوظ کرنے میں ناکامی';
+      default: return 'Save failed';
+    }
+  }
+  String apiKeyRemoved(String provider) {
+    switch (lang) {
+      case 'ar': return 'تمت إزالة مفتاح $provider بأمان';
+      case 'ur': return '$provider کی کلید محفوظ طریقے سے ہٹا دی گئی';
+      default: return '$provider key removed securely';
+    }
+  }
   String get enterNamePrompt {
     switch (lang) {
       case 'ar': return 'يرجى إدخال الاسم';

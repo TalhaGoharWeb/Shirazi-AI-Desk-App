@@ -48,9 +48,14 @@ service cloud.firestore {
     // Fields a user may set on their OWN profile. Privilege-related fields
     // are never writable by clients — not on create, not on update.
     function allowedProfileFields() {
+      // NOTE: `role` / `isAdmin` / privilege flags are deliberately ABSENT —
+      // clients must never write them (see noPrivilegeFields()). Privileges
+      // come only from server-side custom claims.
       return [
-        'displayName', 'photoURL', 'language', 'madhhab', 'persona',
-        'theme', 'notifications', 'createdAt', 'updatedAt'
+        'displayName', 'scholarName', 'photoURL', 'language', 'madhhab',
+        'scholarlyRank', 'persona', 'theme', 'notifications', 'email',
+        'uid', 'isAnonymous', 'honorCodeAccepted', 'isnadVerified',
+        'createdAt', 'updatedAt', 'lastLogin'
       ];
     }
 
@@ -78,6 +83,13 @@ service cloud.firestore {
       allow create: if isOwner(uid) && validProfileWrite();
       allow update: if (isOwner(uid) && validProfileWrite()) || isSuperAdmin();
       allow delete: if isSuperAdmin();
+
+      // Private per-user vault (BYOK API keys, etc.) — OWNER ONLY.
+      // Not even claims-verified admins can read these documents, so a
+      // user's personal provider keys are never visible to anyone else.
+      match /private/{docId} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     // Legacy scholar profile mapping (backward compatibility)

@@ -82,7 +82,6 @@ class FirebaseAuthService {
             'uid': user.uid,
             'isAnonymous': true,
             'displayName': 'Guest Researcher',
-            'role': 'guest',
             'createdAt': FieldValue.serverTimestamp(),
             'lastLogin': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
@@ -92,6 +91,8 @@ class FirebaseAuthService {
             name: 'Guest Researcher',
             role: 'Student of Knowledge',
           );
+
+          await mergeApiKeysWithCloud();
 
           return {
             'success': true,
@@ -142,7 +143,8 @@ class FirebaseAuthService {
             'scholarName': scholarName,
             'madhhab': madhhab,
             'scholarlyRank': scholarlyRank,
-            'role': isAdminRole ? 'admin' : 'scholar',
+            // NOTE: `role` is deliberately NOT written — privileges come only
+            // from server-side custom claims (see firestore.rules).
             'isnadVerified': true,
             'honorCodeAccepted': true,
             'createdAt': FieldValue.serverTimestamp(),
@@ -160,6 +162,8 @@ class FirebaseAuthService {
             madhhab: madhhab,
             rank: scholarlyRank,
           );
+
+          await mergeApiKeysWithCloud();
 
           return {
             'success': true,
@@ -241,18 +245,16 @@ class FirebaseAuthService {
               profileMadhhab = data['madhhab'] as String?;
               profileRank = data['scholarlyRank'] as String?;
 
-              // Update last login timestamp
+              // Update last login timestamp (never write `role` — claims only).
               await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
                 'lastLogin': FieldValue.serverTimestamp(),
-                if (isSuperAdminEmail) 'role': 'super_admin',
               });
             } else {
-              // Ensure doc exists
+              // Ensure doc exists (whitelisted fields only — no `role`).
               await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
                 'uid': user.uid,
                 'email': user.email,
                 'displayName': name,
-                'role': isSuperAdminEmail ? 'super_admin' : (isAdminEmail ? 'admin' : 'scholar'),
                 'lastLogin': FieldValue.serverTimestamp(),
               }, SetOptions(merge: true));
             }
@@ -267,6 +269,10 @@ class FirebaseAuthService {
             madhhab: profileMadhhab,
             rank: profileRank,
           );
+
+          // Restore the user's cloud-backed profile data and BYOK keys so
+          // everything is intact after sign-in (new device, reinstall…).
+          await mergeApiKeysWithCloud();
 
           return {
             'success': true,
@@ -413,6 +419,77 @@ class FirebaseAuthService {
   /// (`users` + legacy `scholars` docs, merged), then updates local storage
   /// so the UI reflects the change immediately. Returns a result map with
   /// `success` and `message`. Email is intentionally not editable here.
+  static const List<String> _byokProviders = [
+    'gemini', 'groq', 'openai', 'anthropic', 'deepseek', 'openrouter',
+  ];
+
+  /// Pushes the BYOK API keys held in device secure storage to the user's
+  /// private Firestore vault (`users/{uid}/private/apiKeys`).
+  ///
+  /// Best-effort: returns `false` when signed out, when Firebase is not
+  /// ready, or on any error. The vault documents are readable ONLY by the
+  /// owning user (see firestore.rules) — not even admins can see them.
+  /// Call this after every key save/delete so the cloud copy stays current.
+  Future<bool> syncApiKeysToCloud() async {
+    if (!_isFirebaseReady) return false;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+    try {
+      final keys = <String, String>{};
+      for (final p in _byokProviders) {
+        final k = storageService.getKeyForProvider(p);
+        if (k.trim().isNotEmpty) keys[p] = k;
+      }
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('private')
+          .doc('apiKeys')
+          .set({
+        'keys': keys,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return true;
+    } catch (e) {
+      debugPrint('[AuthService] API key cloud sync failed: $e');
+      return false;
+    }
+  }
+
+  /// Two-way merge of BYOK keys between device secure storage and the
+  /// private cloud vault. Cloud-only keys are pulled down into secure
+  /// storage; device-only keys are pushed up. Called after every
+  /// successful sign-in so a user's keys (and profile) survive sign-out,
+  /// reinstall, or a new device.
+  Future<void> mergeApiKeysWithCloud() async {
+    if (!_isFirebaseReady) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('private')
+          .doc('apiKeys')
+          .get();
+      final rawKeys = doc.data()?['keys'];
+      if (rawKeys is Map) {
+        for (final p in _byokProviders) {
+          final cloud = rawKeys[p]?.toString() ?? '';
+          if (cloud.trim().isEmpty) continue;
+          final local = storageService.getKeyForProvider(p);
+          if (local.trim().isEmpty) {
+            await storageService.saveKey(p, cloud);
+          }
+        }
+      }
+      // Push the merged set up so the cloud copy converges.
+      await syncApiKeysToCloud();
+    } catch (e) {
+      debugPrint('[AuthService] API key cloud merge failed: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> updateScholarProfile({
     required String scholarName,
     required String madhhab,
