@@ -15,7 +15,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   google_fonts: ^6.3.2
-  intl: ^0.19.0
+  intl: ^0.20.3
   http: ^1.2.2
   # In-app updates from GitHub releases (§12)
   package_info_plus: ^8.0.0
