@@ -17,6 +17,9 @@ dependencies:
   google_fonts: ^6.3.2
   intl: ^0.19.0
   http: ^1.2.2
+  # In-app updates from GitHub releases (§12)
+  package_info_plus: ^8.0.0
+  ota_update: ^5.1.0
   path_provider: ^2.1.5
   shared_preferences: ^2.3.0
   flutter_secure_storage: ^9.2.4

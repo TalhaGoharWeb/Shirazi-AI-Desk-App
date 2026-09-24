@@ -1,0 +1,63 @@
+# Builds a signed release APK and publishes it as a GitHub release.
+#
+# How to ship an update to users:
+#   1. Bump `version:` in pubspec.yaml (e.g. 1.0.1+2) and commit.
+#   2. Tag and push:  git tag v1.0.1 && git push origin v1.0.1
+#   3. This workflow builds app-release.apk, renames it to
+#      shirazi-app-v1.0.1.apk and attaches it to the GitHub release.
+#   4. Devices running the app check
+#      api.github.com/repos/TalhaGoharWeb/Shirazi-AI-Desk-App/releases/latest
+#      on launch (Android) and offer the update in-app.
+#
+# Note: the APK is signed with the default debug key (same as a local
+# `flutter build apk`), so it installs cleanly over other builds made
+# the same way. For Play Store distribution, configure a real keystore
+# and add signing secrets instead.
+name: Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             "shirazi-app-${TAG}.apk"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: shirazi-app-*.apk
+          generate_release_notes: true

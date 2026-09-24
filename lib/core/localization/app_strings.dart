@@ -1164,6 +1164,63 @@ class AppStrings {
       default: return 'Cancel';
     }
   }
+  // --- In-app updates (GitHub releases) ---
+  String get updateCheckLabel {
+    switch (lang) {
+      case 'ar': return 'التحقق من التحديثات';
+      case 'ur': return 'اپ ڈیٹس چیک کریں';
+      default: return 'Check for Updates';
+    }
+  }
+  String get updateAvailableTitle {
+    switch (lang) {
+      case 'ar': return 'يتوفر تحديث جديد';
+      case 'ur': return 'نئی اپ ڈیٹ دستیاب ہے';
+      default: return 'Update Available';
+    }
+  }
+  String updateAvailableBody(String version) {
+    switch (lang) {
+      case 'ar': return 'الإصدار $version جاهز للتثبيت.';
+      case 'ur': return 'ورژن $version انسٹال کے لیے تیار ہے۔';
+      default: return 'Version $version is ready to install.';
+    }
+  }
+  String get updateNowAction {
+    switch (lang) {
+      case 'ar': return 'تحديث الآن';
+      case 'ur': return 'ابھی اپ ڈیٹ کریں';
+      default: return 'Update Now';
+    }
+  }
+  String get remindLaterAction {
+    switch (lang) {
+      case 'ar': return 'لاحقاً';
+      case 'ur': return 'بعد میں';
+      default: return 'Later';
+    }
+  }
+  String get appUpToDateMessage {
+    switch (lang) {
+      case 'ar': return 'لديك أحدث إصدار.';
+      case 'ur': return 'آپ تازہ ترین ورژن استعمال کر رہے ہیں۔';
+      default: return "You're on the latest version.";
+    }
+  }
+  String get updateCheckFailedMessage {
+    switch (lang) {
+      case 'ar': return 'تعذّر التحقق من التحديثات. حاول لاحقاً.';
+      case 'ur': return 'اپ ڈیٹس چیک نہیں ہو سکے۔ بعد میں کوشش کریں۔';
+      default: return "Couldn't check for updates. Try again later.";
+    }
+  }
+  String get downloadingUpdateMessage {
+    switch (lang) {
+      case 'ar': return 'جارٍ تنزيل التحديث…';
+      case 'ur': return 'اپ ڈیٹ ڈاؤن لوڈ ہو رہی ہے…';
+      default: return 'Downloading update…';
+    }
+  }
   String get saveChangesAction {
     switch (lang) {
       case 'ar': return 'حفظ التغييرات';

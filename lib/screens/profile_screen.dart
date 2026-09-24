@@ -6,6 +6,7 @@ import '../core/localization/app_strings.dart';
 import '../providers/settings_provider.dart';
 import '../providers/chat_provider.dart';
 import '../services/firebase_auth_service.dart';
+import '../widgets/app_update.dart';
 import '../widgets/shirazi_emblem.dart';
 import 'settings_byok_screen.dart';
 import 'sign_in_screen.dart';
@@ -484,6 +485,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: strings.moreSectionTitle,
       icon: Icons.apps_rounded,
       children: [
+        _LinkRow(
+          icon: Icons.system_update_outlined,
+          label: strings.updateCheckLabel,
+          strings: strings,
+          onTap: () => manualUpdateCheck(context),
+        ),
         _LinkRow(
           icon: Icons.admin_panel_settings_outlined,
           label: strings.adminOversightLabel,
