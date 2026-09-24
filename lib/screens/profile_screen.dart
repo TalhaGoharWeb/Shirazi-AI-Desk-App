@@ -4,6 +4,7 @@ import '../core/theme/shirazi_colors.dart';
 import '../core/theme/shirazi_typography.dart';
 import '../core/localization/app_strings.dart';
 import '../providers/settings_provider.dart';
+import '../providers/chat_provider.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/shirazi_emblem.dart';
 import 'settings_byok_screen.dart';
@@ -59,30 +60,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SettingsProvider settings,
   ) async {
     final strings = AppStrings.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final authService = context.read<FirebaseAuthService>();
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = strings.nameFieldLabel);
+      setState(() => _error = strings.enterNamePrompt);
       return;
     }
     setState(() {
       _saving = true;
       _error = null;
     });
-    final result = await FirebaseAuthService().updateScholarProfile(
+    final result = await authService.updateScholarProfile(
       scholarName: name,
       madhhab: _selectedMadhhab,
       scholarlyRank: _selectedRank,
     );
     if (!mounted) return;
     setState(() => _saving = false);
-    if (result.isSuccess) {
+    if (result['success'] == true) {
       settings.refreshProfile();
       setState(() => _editing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(strings.profileSavedSuccess)),
       );
     } else {
-      setState(() => _error = result.errorMessage ?? strings.genericErrorLabel);
+      setState(() => _error =
+          (result['message'] as String?) ?? strings.genericErrorLabel);
     }
   }
 
@@ -119,7 +123,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     final settings = context.watch<SettingsProvider>();
-    final isGuest = settings.isGuest;
+    final firebaseUser = context.watch<FirebaseAuthService>().currentUser;
+    final isGuest = firebaseUser == null || firebaseUser.isAnonymous;
 
     return Scaffold(
       backgroundColor: ShiraziColors.background,
@@ -227,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [ShiraziColors.primary, ShiraziColors.secondaryFixedDim],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -394,6 +399,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Stats ────────────────────────────────────────────────────────────
   Widget _buildStatsSection(BuildContext context, AppStrings strings) {
     final settings = context.read<SettingsProvider>();
+    final conversations =
+        context.watch<ChatProvider>().conversations.length;
+    final savedKeys = [
+      settings.geminiKey,
+      settings.groqKey,
+      settings.openRouterKey,
+    ].where((k) => k.trim().isNotEmpty).length;
     final langLabel = settings.language == 'ur'
         ? 'اردو'
         : settings.language == 'ar'
@@ -408,7 +420,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Expanded(
               child: _StatTile(
                 icon: Icons.forum_outlined,
-                value: '${settings.totalConversations}',
+                value: '$conversations',
                 label: strings.conversationsStatLabel,
                 strings: strings,
               ),
@@ -417,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Expanded(
               child: _StatTile(
                 icon: Icons.key_outlined,
-                value: '${settings.savedKeyCount}',
+                value: '$savedKeys',
                 label: strings.personalKeysStatLabel,
                 strings: strings,
               ),
@@ -502,10 +514,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () async {
-          await FirebaseAuthService().signOut();
+          final authService = context.read<FirebaseAuthService>();
+          final messenger = ScaffoldMessenger.of(context);
+          await authService.signOut();
           if (!context.mounted) return;
           context.read<SettingsProvider>().refreshProfile();
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(content: Text(strings.signedOutSuccess)),
           );
           Navigator.of(context).pop();
@@ -714,18 +728,16 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final List<Widget> children;
-  final AppStrings? strings;
 
   const _SectionCard({
     required this.title,
     required this.icon,
     required this.children,
-    this.strings,
   });
 
   @override
   Widget build(BuildContext context) {
-    final s = strings ?? AppStrings.of(context);
+    final s = AppStrings.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -879,7 +891,7 @@ class _Dropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       onChanged: onChanged,
       items: items
           .map(

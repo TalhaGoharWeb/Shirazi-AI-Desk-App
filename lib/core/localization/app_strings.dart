@@ -1185,6 +1185,13 @@ class AppStrings {
       default: return 'Error';
     }
   }
+  String get enterNamePrompt {
+    switch (lang) {
+      case 'ar': return 'يرجى إدخال الاسم';
+      case 'ur': return 'براہ کرم اپنا نام درج کریں';
+      default: return 'Please enter your name';
+    }
+  }
   String get guestRoleLabel {
     switch (lang) {
       case 'ar': return 'ضيف';

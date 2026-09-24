@@ -96,7 +96,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   // ── Assistant turn ─────────────────────────────────────────────────────
   Widget _buildAssistantBubble(BuildContext context, ShiraziChatMessage msg) {
     final strings = AppStrings.of(context);
-    final isRtl = strings.isRtl;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -176,7 +175,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
               child: ScholarlyMarkdownView(content: msg.content),
             ),
             const SizedBox(height: 12),
-            const Wrap(
+            Wrap(
               spacing: 10,
               runSpacing: 10,
               children: [
