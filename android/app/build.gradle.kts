@@ -16,6 +16,8 @@ android {
     ndkVersion = "27.0.12077973"
 
     compileOptions {
+        // Required by ota_update 7.x (core library desugaring).
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -47,4 +49,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Required by ota_update 7.x (core library desugaring); version per the
+    // package's own migration guide for AGP 7.4+.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }
